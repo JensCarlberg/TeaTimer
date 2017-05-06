@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:layout_margin="10dp"
+    android:padding="5dp"
+    android:fadingEdge="horizontal"
+    >
+
+    <Space
+        android:layout_width="match_parent"
+        android:layout_height="5dp"
+        android:alpha="0.5" />
+
+    <LinearLayout
+        android:id="@+id/timer_container"
+        android:background="#ffeeeeee"
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <TextView
+            android:id="@+id/teaPot"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center|start"
+            android:textAppearance="?android:attr/textAppearanceLarge"
+            android:textStyle="bold"
+            android:layout_weight="0.8"
+            android:text="Rooibos\nTermos 1" />
+
+        <Button
+            android:id="@+id/teaTimerDismiss"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textAppearance="?android:attr/textAppearanceLarge"
+            android:textStyle="bold"
+            android:text="..."
+            android:layout_weight="0.2"
+            android:layout_gravity="center|end" />
+    </LinearLayout>
+
+    <Space
+        android:layout_width="match_parent"
+        android:layout_height="5dp"
+        android:alpha="0.5" />
+
+</LinearLayout>

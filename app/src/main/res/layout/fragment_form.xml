@@ -1,0 +1,110 @@
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:id="@+id/form_layout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingBottom="@dimen/activity_vertical_margin"
+        android:paddingLeft="@dimen/activity_horizontal_margin"
+        android:paddingRight="@dimen/activity_horizontal_margin"
+        android:paddingTop="@dimen/activity_vertical_margin"
+        tools:context=".MainActivity$PlaceholderFragment">
+
+        <EditText
+            android:id="@+id/form_teaName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="5dp"
+            android:background="#eeee"
+            android:hint="Te"
+            android:padding="10dp"
+            android:textAppearance="@android:style/TextAppearance.DeviceDefault.Large" />
+
+        <EditText
+            android:id="@+id/form_teaType"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="5dp"
+            android:background="#eeee"
+            android:hint="Typ (Konvent, Svart, Populi...)"
+            android:padding="10dp"
+            android:textAppearance="@android:style/TextAppearance.DeviceDefault.Large" />
+
+        <EditText
+            android:id="@+id/form_teaPot"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="5dp"
+            android:background="#eeee"
+            android:hint="Kanna"
+            android:padding="10dp"
+            android:textAppearance="@android:style/TextAppearance.DeviceDefault.Large" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:padding="0dp">
+
+            <EditText
+                android:id="@+id/form_teaVolume"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_margin="5dp"
+                android:layout_weight="0.3"
+                android:background="#eeee"
+                android:gravity="center"
+                android:hint="Volym (l)"
+                android:inputType="numberDecimal"
+                android:nextFocusForward="@+id/form_teaSoakTime"
+                android:padding="10dp"
+                android:textAppearance="@android:style/TextAppearance.DeviceDefault.Large" />
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="0.2" />
+
+            <EditText
+                android:id="@+id/form_teaSoakTime"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_margin="5dp"
+                android:layout_weight="0.3"
+                android:background="#eeee"
+                android:gravity="center"
+                android:hint="Dragtid (s)"
+                android:inputType="number"
+                android:padding="10dp"
+                android:textAppearance="@android:style/TextAppearance.DeviceDefault.Large" />
+
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/form_teaStart"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="30dp"
+            android:background="#eeee"
+            android:onClick="addTeaTimer"
+            android:text="START"
+            android:textAppearance="@android:style/TextAppearance.DeviceDefault.Large"
+            android:textStyle="bold" />
+
+        <Button
+            android:id="@+id/form_teaClear"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="30dp"
+            android:background="#eeee"
+            android:onClick="clearForm"
+            android:text="Rensa"
+            android:textAppearance="@android:style/TextAppearance.DeviceDefault.Large"
+            android:textStyle="bold" />
+
+    </LinearLayout>
+</ScrollView>

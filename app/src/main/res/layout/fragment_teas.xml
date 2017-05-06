@@ -1,0 +1,43 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:paddingBottom="@dimen/activity_vertical_margin"
+    android:paddingLeft="@dimen/activity_horizontal_margin"
+    android:paddingRight="@dimen/activity_horizontal_margin"
+    android:paddingTop="@dimen/activity_vertical_margin"
+    tools:context=".MainActivity$PlaceholderFragment">
+
+    <!-- A vertical LinearLayout in a ScrollView. This emulates a ListView (and is lighter weight
+         than a ListView when there aren't many rows). -->
+    <ScrollView android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <!-- Note that this LinearLayout has the "animateLayoutChanges" property set to true.
+             This tells the framework to automatically animate child views (in this case, rows)
+             as they are added to and removed from the LinearLayout. -->
+        <LinearLayout android:id="@+id/teaContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:showDividers="middle"
+            android:divider="?android:dividerHorizontal"
+            android:animateLayoutChanges="true"
+            android:paddingLeft="16dp"
+            android:paddingRight="16dp" />
+
+    </ScrollView>
+
+    <!-- <ListView
+        android:id="@+id/list_teatimers"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#aaffffff"
+        android:dividerHeight="0.1dp"
+        android:divider="#0000CC"
+        android:layout_weight="1">
+
+    </ListView> -->
+
+</LinearLayout>
