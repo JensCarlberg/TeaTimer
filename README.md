@@ -1,2 +1,2 @@
 # TeaTimer
-Timer for tea controllade by RFID tahs and reporting to a server for statistics
+Timer for teas controlled by RFID tags and reporting to a server for statistics.
