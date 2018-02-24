@@ -34,11 +34,13 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Locale;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class MainActivity extends AppCompatActivity {
 
     public static final String TESERVER_ADDRESS_KEY = "teserverAddress";
-    public static final String TESERVER_ADDRESS_DEFAULT = "192.168.42.1:1234";
+    public static final String TESERVER_ADDRESS_DEFAULT = "https://konventste.se";
     public static String teaServer = TESERVER_ADDRESS_DEFAULT;
     private static final String LOG_TAG = MainActivity.class.getSimpleName();
     private static final TeaList teaList = new TeaList();
@@ -88,6 +90,9 @@ public class MainActivity extends AppCompatActivity {
      * The {@link ViewPager} that will host the section contents.
      */
     ViewPager mViewPager;
+
+    Timer signalTeaIsDoneTimer = new Timer("TeaIsDone");
+    boolean activityIsVisible = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -151,6 +156,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         setupForegroundDispatch(this, nfcAdapter);
+        activityIsVisible = true;
     }
 
     @Override
@@ -160,6 +166,7 @@ public class MainActivity extends AppCompatActivity {
          */
         stopForegroundDispatch(this, nfcAdapter);
         super.onPause();
+        activityIsVisible = false;
     }
 
     @Override
@@ -289,10 +296,26 @@ public class MainActivity extends AppCompatActivity {
         teaList().add(tea);
         logTea(tea);
         addToServer(tea);
+        resumeOnAlarm(tea);
+    }
+
+    private void resumeOnAlarm(final Tea tea) {
+        signalTeaIsDoneTimer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                if (!activityIsVisible) resumeActivity();
+            }
+        }, tea.brewStopTime - System.currentTimeMillis());
+    }
+
+    private void resumeActivity() {
+        Intent intent = new Intent(getApplicationContext(), getClass());
+        intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        startActivity(intent);
     }
 
     private void addToServer(Tea tea) {
-        new Thread(new Sender(tea, "http://" + teaServer + "/teserver/AddTea")).start();
+        new Thread(new Sender(tea, teaServer + "/teserver/AddTea")).start();
     }
 
     private void logTea(Tea tea) {
