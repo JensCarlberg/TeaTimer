@@ -1,10 +1,7 @@
 package se.liu.it.jens.teatimer;
 
-import android.app.Activity;
-import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.nfc.NdefMessage;
 import android.nfc.NfcAdapter;
 import android.os.Bundle;
@@ -34,11 +31,13 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Locale;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class MainActivity extends AppCompatActivity {
 
     public static final String TESERVER_ADDRESS_KEY = "teserverAddress";
-    public static final String TESERVER_ADDRESS_DEFAULT = "192.168.42.1:1234";
+    public static final String TESERVER_ADDRESS_DEFAULT = "https://konventste.se";
     public static String teaServer = TESERVER_ADDRESS_DEFAULT;
     private static final String LOG_TAG = MainActivity.class.getSimpleName();
     private static final TeaList teaList = new TeaList();
@@ -88,6 +87,9 @@ public class MainActivity extends AppCompatActivity {
      * The {@link ViewPager} that will host the section contents.
      */
     ViewPager mViewPager;
+
+    Timer signalTeaIsDoneTimer = new Timer("TeaIsDone");
+    boolean activityIsVisible = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -150,16 +152,14 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        setupForegroundDispatch(this, nfcAdapter);
+        processIntent(getIntent());
+        activityIsVisible = true;
     }
 
     @Override
     protected void onPause() {
-        /**
-         * Call this before onPause, otherwise an IllegalArgumentException is thrown as well.
-         */
-        stopForegroundDispatch(this, nfcAdapter);
         super.onPause();
+        activityIsVisible = false;
     }
 
     @Override
@@ -170,47 +170,23 @@ public class MainActivity extends AppCompatActivity {
         outState.putString(TESERVER_ADDRESS_KEY, teaServer);
     }
 
-    public static void setupForegroundDispatch(final Activity activity, NfcAdapter adapter) {
-        if (adapter == null) return;
-        final Intent intent = new Intent(activity.getApplicationContext(), activity.getClass());
-        intent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
-
-        final PendingIntent pendingIntent = PendingIntent.getActivity(activity.getApplicationContext(), 0, intent, 0);
-
-        IntentFilter[] filters = new IntentFilter[1];
-        String[][] techList = new String[][]{};
-
-        // Notice that this is the same filter as in our manifest.
-        filters[0] = new IntentFilter();
-        filters[0].addAction(NfcAdapter.ACTION_NDEF_DISCOVERED);
-        filters[0].addCategory(Intent.CATEGORY_DEFAULT);
-        try {
-            filters[0].addDataType("text/plain");
-        } catch (IntentFilter.MalformedMimeTypeException e) {
-            throw new RuntimeException("Check your mime type.");
-        }
-
-        adapter.enableForegroundDispatch(activity, pendingIntent, filters, techList);
-    }
-
-    /**
-     * @param activity The corresponding {@link Activity} requesting to stop the foreground dispatch.
-     * @param adapter  The {@link NfcAdapter} used for the foreground dispatch.
-     */
-    public static void stopForegroundDispatch(final Activity activity, NfcAdapter adapter) {
-        if (adapter == null) return;
-        adapter.disableForegroundDispatch(activity);
-    }
-
     @Override
     public void onNewIntent(Intent intent) {
-        String action = intent.getAction();
-        String actionNdefDiscovered = NfcAdapter.ACTION_NDEF_DISCOVERED;
-        if (actionNdefDiscovered.equals(action))
-            processIntent(intent);
+        super.onNewIntent(intent);
+        setIntent(intent);
     }
 
     void processIntent(Intent intent) {
+        if (intent == null) return;
+        String action = intent.getAction();
+        String actionNdefDiscovered = NfcAdapter.ACTION_NDEF_DISCOVERED;
+        if (!actionNdefDiscovered.equals(action)) return;
+        if (hasNoTeaFormView()) {
+            retryLater();
+            return;
+        }
+
+        setIntent(null);
         ((Vibrator) getSystemService(Context.VIBRATOR_SERVICE)).vibrate(500);
         Parcelable[] rawMsgs = intent.getParcelableArrayExtra(NfcAdapter.EXTRA_NDEF_MESSAGES);
         NdefMessage msg = (NdefMessage) rawMsgs[0];
@@ -228,6 +204,22 @@ public class MainActivity extends AppCompatActivity {
                     gotoTeaForm();
             }
         });
+    }
+
+    private void retryLater() {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException ignore) { }
+                processIntent(getIntent());
+            }
+        }).start();
+    }
+
+    private boolean hasNoTeaFormView() {
+        return this.findViewById(R.id.form_layout) == null;
     }
 
     public void addTeaTimer(View view) {
@@ -289,10 +281,26 @@ public class MainActivity extends AppCompatActivity {
         teaList().add(tea);
         logTea(tea);
         addToServer(tea);
+        resumeOnAlarm(tea);
+    }
+
+    private void resumeOnAlarm(final Tea tea) {
+        signalTeaIsDoneTimer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                if (!activityIsVisible) resumeActivity();
+            }
+        }, tea.brewStopTime - System.currentTimeMillis());
+    }
+
+    private void resumeActivity() {
+        Intent intent = new Intent(getApplicationContext(), getClass());
+        intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        startActivity(intent);
     }
 
     private void addToServer(Tea tea) {
-        new Thread(new Sender(tea, "http://" + teaServer + "/teserver/AddTea")).start();
+        new Thread(new Sender(tea, teaServer + "/teserver/AddTea")).start();
     }
 
     private void logTea(Tea tea) {

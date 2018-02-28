@@ -58,6 +58,8 @@ public class Tea implements Comparable<Tea> {
         }
 
         public Builder readView(View view) {
+            if (view == null) return this;
+
             EditText teaText = (EditText) view.findViewById(R.id.form_teaName);
             EditText typeText = (EditText) view.findViewById(R.id.form_teaType);
             EditText potText = (EditText) view.findViewById(R.id.form_teaPot);
