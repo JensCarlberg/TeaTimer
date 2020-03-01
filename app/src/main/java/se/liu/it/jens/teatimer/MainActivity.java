@@ -33,12 +33,14 @@ import android.widget.Toast;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Locale;
+import java.util.Objects;
 
 public class MainActivity extends AppCompatActivity {
 
     public static final String TESERVER_ADDRESS_KEY = "teserverAddress";
-    public static final String TESERVER_ADDRESS_DEFAULT = "192.168.42.1:1234";
+    public static final String TESERVER_ADDRESS_DEFAULT = "https://konventste.se";
     public static String teaServer = TESERVER_ADDRESS_DEFAULT;
     private static final String LOG_TAG = MainActivity.class.getSimpleName();
     private static final TeaList teaList = new TeaList();
@@ -155,9 +157,6 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onPause() {
-        /**
-         * Call this before onPause, otherwise an IllegalArgumentException is thrown as well.
-         */
         stopForegroundDispatch(this, nfcAdapter);
         super.onPause();
     }
@@ -211,7 +210,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     void processIntent(Intent intent) {
-        ((Vibrator) getSystemService(Context.VIBRATOR_SERVICE)).vibrate(500);
+        vibrate(500);
         Parcelable[] rawMsgs = intent.getParcelableArrayExtra(NfcAdapter.EXTRA_NDEF_MESSAGES);
         NdefMessage msg = (NdefMessage) rawMsgs[0];
         String text = new String(msg.getRecords()[0].getPayload());
@@ -228,6 +227,12 @@ public class MainActivity extends AppCompatActivity {
                     gotoTeaForm();
             }
         });
+    }
+
+    private void vibrate(int len) {
+        try {
+            ((Vibrator) Objects.requireNonNull(getSystemService(Context.VIBRATOR_SERVICE))).vibrate(len);
+        } catch (Exception ignore) {}
     }
 
     public void addTeaTimer(View view) {
@@ -292,27 +297,25 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void addToServer(Tea tea) {
-        new Thread(new Sender(tea, "http://" + teaServer + "/teserver/AddTea")).start();
+        new Thread(new Sender(tea, teaServer + "/teserver/AddTea")).start();
     }
 
     private void logTea(Tea tea) {
         try {
             FileOutputStream outputStream = new FileOutputStream(getFile("Teas.log"), true);
-            outputStream.write(tea.toString().getBytes("UTF-8"));
-            outputStream.write("\n".getBytes("UTF-8"));
+            outputStream.write(tea.toString().getBytes(StandardCharsets.UTF_8));
+            outputStream.write("\n".getBytes(StandardCharsets.UTF_8));
             outputStream.close();
         } catch (Exception e) {
             Log.e(LOG_TAG, "Cannot log brewed tea to file: " + tea, e);
         }
     }
 
-    public static File getFile(String file) throws IOException {
+    public static File getFile(String file) {
         File externalPath = Environment.getExternalStorageDirectory();
         File path = new File(externalPath, "TeaTimer");
-        // File path = new File(File.separator + "sdcard" + File.separator + "TeaTimer");
-        path.mkdirs();
-        File resultFile = new File(path, file);
-        return resultFile;
+        if (!path.exists()) path.mkdirs();
+        return new File(path, file);
     }
 
     private TeaFormField findInvalidField(View view) {
@@ -359,7 +362,7 @@ public class MainActivity extends AppCompatActivity {
      */
     public class SectionsPagerAdapter extends FragmentPagerAdapter {
 
-        public SectionsPagerAdapter(FragmentManager fm) {
+        SectionsPagerAdapter(FragmentManager fm) {
             super(fm);
         }
 

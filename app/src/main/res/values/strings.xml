@@ -2,4 +2,12 @@
     <string name="app_name">TeaTimer</string>
     <string name="action_settings">Settings</string>
     <string name="section_format">Hello World from section: %1$d</string>
+    <string name="kanna">Kanna</string>
+    <string name="te_namn_exempel">Te</string>
+    <string name="typ_te_exempel">Typ (Konvent, Svart, Populi…)</string>
+    <string name="volym_hint">Volym (l)</string>
+    <string name="dragtid_hint">Dragtid (s)</string>
+    <string name="rensa">Rensa</string>
+    <string name="start">START</string>
+    <string name="form_background_descrition">Background Tebaren teapot</string>
 </resources>
