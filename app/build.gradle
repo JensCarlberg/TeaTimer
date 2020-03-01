@@ -6,6 +6,7 @@ android {
     defaultConfig {
         applicationId "se.liu.it.jens.teatimer"
         minSdkVersion 23
+        //noinspection ExpiredTargetSdkVersion
         targetSdkVersion 23
         versionCode 1
         versionName "1.0"
