@@ -32,13 +32,13 @@ import android.widget.Toast;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 
 public class MainActivity extends AppCompatActivity {
 
     public static final String TESERVER_ADDRESS_KEY = "teserverAddress";
-    public static final String TESERVER_ADDRESS_DEFAULT = "192.168.42.1:1234";
+    public static final String TESERVER_ADDRESS_DEFAULT = "https://www.konventste.se";
     public static String teaServer = TESERVER_ADDRESS_DEFAULT;
     private static final String LOG_TAG = MainActivity.class.getSimpleName();
     private static final TeaList teaList = new TeaList();
@@ -155,9 +155,6 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onPause() {
-        /**
-         * Call this before onPause, otherwise an IllegalArgumentException is thrown as well.
-         */
         stopForegroundDispatch(this, nfcAdapter);
         super.onPause();
     }
@@ -292,27 +289,29 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void addToServer(Tea tea) {
-        new Thread(new Sender(tea, "http://" + teaServer + "/teserver/AddTea")).start();
+        String serverUrl = teaServer + "/teserver/AddTea";
+        if (!serverUrl.contains("://"))
+            serverUrl = "http://" + serverUrl;
+        new Thread(new Sender(tea, serverUrl)).start();
     }
 
     private void logTea(Tea tea) {
         try {
             FileOutputStream outputStream = new FileOutputStream(getFile("Teas.log"), true);
-            outputStream.write(tea.toString().getBytes("UTF-8"));
-            outputStream.write("\n".getBytes("UTF-8"));
+            outputStream.write(tea.toString().getBytes(StandardCharsets.UTF_8));
+            outputStream.write("\n".getBytes(StandardCharsets.UTF_8));
             outputStream.close();
         } catch (Exception e) {
             Log.e(LOG_TAG, "Cannot log brewed tea to file: " + tea, e);
         }
     }
 
-    public static File getFile(String file) throws IOException {
+    public static File getFile(String file) {
         File externalPath = Environment.getExternalStorageDirectory();
         File path = new File(externalPath, "TeaTimer");
         // File path = new File(File.separator + "sdcard" + File.separator + "TeaTimer");
         path.mkdirs();
-        File resultFile = new File(path, file);
-        return resultFile;
+        return new File(path, file);
     }
 
     private TeaFormField findInvalidField(View view) {
@@ -420,7 +419,6 @@ public class MainActivity extends AppCompatActivity {
         public View onCreateView(LayoutInflater inflater, ViewGroup container,
                                  Bundle savedInstanceState) {
             int sectionNumber = getArguments().getInt(ARG_SECTION_NUMBER);
-            System.out.println("onCreateView: " + sectionNumber + " in object " + this.toString());
             switch (sectionNumber) {
                 case 1:
                     return makeTeaFragment(inflater, container);

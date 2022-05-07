@@ -146,7 +146,7 @@ public class Tea implements Comparable<Tea> {
         this.volumeLiter = volumeLiter;
         this.soakSeconds = soakSeconds;
         this.brewStartTime = brewStartTime;
-        this.brewStopTime = brewStartTime.getTime() + soakSeconds * 1000;
+        this.brewStopTime = brewStartTime.getTime() + soakSeconds * 1000L;
         this.id = id;
     }
 
@@ -158,7 +158,7 @@ public class Tea implements Comparable<Tea> {
         return Integer.parseInt(soakTime);
     }
 
-    public String teaPot() {
+    public String teaAndPot() {
         return String.format("%s\n%s", tea, pot);
     }
 

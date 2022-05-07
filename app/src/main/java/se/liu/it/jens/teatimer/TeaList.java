@@ -8,8 +8,6 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.TextView;
 
-import java.util.SortedSet;
-
 public class TeaList extends SortedList<Tea> {
 
     ViewGroup teaContainer = null;
@@ -44,29 +42,36 @@ public class TeaList extends SortedList<Tea> {
         final View rowView = inflater.inflate(R.layout.tea, parent, false);
         final View timerContainer = rowView.findViewById(R.id.timer_container);
         final Button soakTime = (Button) rowView.findViewById(R.id.teaTimerDismiss);
-        ((TextView) rowView.findViewById(R.id.teaPot)).setText(tea.teaPot());
+        ((TextView) rowView.findViewById(R.id.teaPot)).setText(tea.teaAndPot());
         long remainingCount = tea.brewStopTime - System.currentTimeMillis();
         if (remainingCount < 1) timerContainer.setBackgroundColor(0xff00ff00);
         final CountDownTimer timer = new CountDownTimer(remainingCount, 1000) {
             public void onTick(long millisUntilFinished) {
-                soakTime.setText(tea.brewText(millisUntilFinished));
+                soakTime.setText(Tea.brewText(millisUntilFinished));
             }
 
             public void onFinish() {
-                soakTime.setText(tea.brewText(0));
+                soakTime.setText(Tea.brewText(0));
                 timerContainer.setBackgroundColor(0xff00ff00);
+                timerContainer.setClickable(true);
             }
         }.start();
 
-        soakTime.setOnClickListener(new View.OnClickListener() {
+        soakTime.setOnClickListener(getOnClickListener(tea, timer));
+        timerContainer.setOnClickListener(getOnClickListener(tea, timer));
+        timerContainer.setClickable(false);
+
+        return rowView;
+    }
+
+    private View.OnClickListener getOnClickListener(final Tea tea, final CountDownTimer timer) {
+        return new View.OnClickListener() {
             @Override
             public void onClick(View clickView) {
                 timer.cancel();
                 remove(tea);
             }
-        });
-
-        return rowView;
+        };
     }
 
     @Override
