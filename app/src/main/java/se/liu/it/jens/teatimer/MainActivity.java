@@ -7,6 +7,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.nfc.NdefMessage;
 import android.nfc.NfcAdapter;
+import android.nfc.Tag;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Parcelable;
@@ -26,13 +27,20 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
+import android.widget.AutoCompleteTextView;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Locale;
 
 public class MainActivity extends AppCompatActivity {
@@ -41,10 +49,13 @@ public class MainActivity extends AppCompatActivity {
     public static final String TESERVER_ADDRESS_DEFAULT = "https://www.konventste.se";
     public static String teaServer = TESERVER_ADDRESS_DEFAULT;
     private static final String LOG_TAG = MainActivity.class.getSimpleName();
+    private static final long TIME_BETWEEN_SAME_TAG_READ = 5000;
     private static final TeaList teaList = new TeaList();
     public static TeaList teaList() { return teaList; }
     private static SoundHandler soundHandler;
-    public static SoundHandler soundHandler() { return soundHandler; }
+    public static ArrayAdapter<String> teaNameCompletionAdapter;
+    public static String lastId = "";
+    public static long lastTime = System.currentTimeMillis() - TIME_BETWEEN_SAME_TAG_READ;
 
     private NfcAdapter nfcAdapter = null;
 
@@ -94,12 +105,11 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-
-        // Create the adapter that will return a fragment for each of the three
+        // Create the teaAdapter that will return a fragment for each of the three
         // primary sections of the activity.
         mSectionsPagerAdapter = new SectionsPagerAdapter(getSupportFragmentManager());
 
-        // Set up the ViewPager with the sections adapter.
+        // Set up the ViewPager with the sections teaAdapter.
         mViewPager = (ViewPager) findViewById(R.id.pager);
         mViewPager.setAdapter(mSectionsPagerAdapter);
 
@@ -208,6 +218,16 @@ public class MainActivity extends AppCompatActivity {
     }
 
     void processIntent(Intent intent) {
+        String id = bytesToHexString( ((Tag) intent.getParcelableExtra(NfcAdapter.EXTRA_TAG)).getId());
+        if (id == null) return;
+        if (id.equals(lastId) && (System.currentTimeMillis() - lastTime) < TIME_BETWEEN_SAME_TAG_READ) {
+            ((Vibrator) getSystemService(Context.VIBRATOR_SERVICE)).vibrate(new long[] { 0, 100, 100, 100, 100, 100 }, -1);
+            return;
+        }
+
+        lastId = id;
+        lastTime = System.currentTimeMillis();
+
         ((Vibrator) getSystemService(Context.VIBRATOR_SERVICE)).vibrate(500);
         Parcelable[] rawMsgs = intent.getParcelableArrayExtra(NfcAdapter.EXTRA_NDEF_MESSAGES);
         NdefMessage msg = (NdefMessage) rawMsgs[0];
@@ -215,16 +235,30 @@ public class MainActivity extends AppCompatActivity {
         final View teaForm = this.findViewById(R.id.form_layout);
         final View teaStartButton = teaForm.findViewById(R.id.form_teaStart);
         final Tea.Builder builder = new Tea.Builder().readView(teaForm).readTag(text);
-        this.runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                builder.populateTeaFormView(teaForm);
-                if (builder.allSet()) {
-                    addTeaTimer(teaStartButton);
-                } else
-                    gotoTeaForm();
-            }
+        this.runOnUiThread(() -> {
+            builder.populateTeaFormView(teaForm);
+            if (builder.allSet()) {
+                addTeaTimer(teaStartButton);
+            } else
+                gotoTeaForm();
         });
+    }
+
+    private String bytesToHexString(byte[] src) {
+        char[] hexNums = new char[] {
+                '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'
+        };
+        StringBuilder stringBuilder = new StringBuilder("0x");
+        if (src == null || src.length <= 0) {
+            return null;
+        }
+
+        for (byte b : src) {
+            stringBuilder.append(hexNums[(b >>> 4) & 0x0F]);
+            stringBuilder.append(hexNums[b & 0x0F]);
+        }
+
+        return stringBuilder.toString();
     }
 
     public void addTeaTimer(View view) {
@@ -286,13 +320,20 @@ public class MainActivity extends AppCompatActivity {
         teaList().add(tea);
         logTea(tea);
         addToServer(tea);
+        addToCompletionList(tea);
+    }
+
+    private void addToCompletionList(Tea tea) {
+        if (tea.tea == null) return;
+        int count = teaNameCompletionAdapter.getCount();
+        for (int i=0; i<count; i++)
+            if (tea.tea.equalsIgnoreCase(teaNameCompletionAdapter.getItem(i))) return;
+        teaNameCompletionAdapter.add(tea.tea.toLowerCase());
+        teaNameCompletionAdapter.sort(Comparator.naturalOrder());
     }
 
     private void addToServer(Tea tea) {
-        String serverUrl = teaServer + "/teserver/AddTea";
-        if (!serverUrl.contains("://"))
-            serverUrl = "http://" + serverUrl;
-        new Thread(new Sender(tea, serverUrl)).start();
+        NetworkService.sendTea(tea, teaServer);
     }
 
     private void logTea(Tea tea) {
@@ -356,7 +397,7 @@ public class MainActivity extends AppCompatActivity {
      * A {@link FragmentPagerAdapter} that returns a fragment corresponding to
      * one of the sections/tabs/pages.
      */
-    public class SectionsPagerAdapter extends FragmentPagerAdapter {
+    public static class SectionsPagerAdapter extends FragmentPagerAdapter {
 
         public SectionsPagerAdapter(FragmentManager fm) {
             super(fm);
@@ -441,7 +482,37 @@ public class MainActivity extends AppCompatActivity {
         }
 
         private View makeFormFragment(LayoutInflater inflater, ViewGroup container) {
-            return inflater.inflate(R.layout.fragment_form, container, false);
+            View view = inflater.inflate(R.layout.fragment_form, container, false);
+
+            AutoCompleteTextView textView = (AutoCompleteTextView)view.findViewById(R.id.form_teaName);
+            if (teaNameCompletionAdapter == null)
+                teaNameCompletionAdapter = new ArrayAdapter<String>(
+                        getContext(),
+                        R.layout.tea_name_item_1line,
+                        new ArrayList<String>());
+            textView.setAdapter(teaNameCompletionAdapter);
+
+            NetworkService.getUsedTeaNames(new TeaServerCallback() {
+                @Override public void ok(String result) {
+                    addTeasToAdapter(result); }
+                @Override public void fail(int code, Throwable throwable) {
+                    Log.w(LOG_TAG, "Det sket sig...");
+                }
+            }, teaServer);
+            return view;
+        }
+
+        private void addTeasToAdapter(String result) {
+            try {
+                JSONObject jsonObject = new JSONObject(result);
+                if (!jsonObject.has("teaNames")) return;
+                JSONArray teaNames = jsonObject.getJSONArray("teaNames");
+                for (int i=0; i<teaNames.length(); i++)
+                    teaNameCompletionAdapter.add(teaNames.getString(i).toLowerCase());
+                teaNameCompletionAdapter.sort(Comparator.naturalOrder());
+            } catch (Exception e) {
+                Log.w(LOG_TAG, String.format("Could not add server data to adapter: '%s'", result), e);
+            }
         }
 
         private View makeSettingsFragment(LayoutInflater inflater, ViewGroup container) {

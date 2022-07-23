@@ -1,10 +1,12 @@
 package se.liu.it.jens.teatimer;
 
+import android.net.Uri;
 import android.view.View;
 import android.widget.EditText;
 
 import com.google.common.collect.ComparisonChain;
 
+import java.net.URI;
 import java.util.Date;
 
 public class Tea implements Comparable<Tea> {
@@ -192,4 +194,17 @@ public class Tea implements Comparable<Tea> {
     public String toString() {
         return String.format("%1$tF %1$tT\t%2$s\t%3$s\t%4$s\t%5$s\t%6$s", brewStartTime, tea, teaType, volumeLiter, pot, id);
     }
+
+
+    public Uri toUri(String serverUrl) {
+        return Uri.parse(serverUrl).buildUpon()
+                .appendQueryParameter("tea", this.tea)
+                .appendQueryParameter("type", this.teaType)
+                .appendQueryParameter("pot", this.pot)
+                .appendQueryParameter("volume", "" + this.volumeLiter)
+                .appendQueryParameter("start", "" + this.brewStartTime.getTime())
+                .appendQueryParameter("id", "" + this.brewStartTime.getTime())
+                .build();
+    }
+
 }

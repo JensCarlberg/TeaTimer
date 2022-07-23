@@ -1,14 +1,14 @@
 <RelativeLayout android:layout_width="match_parent"
     android:layout_height="match_parent"
     xmlns:android="http://schemas.android.com/apk/res/android">
-
+<!--
     <ImageView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:scaleType="centerCrop"
         android:src="@drawable/teapot_1920_faded"
         android:contentDescription="@string/form_background_descrition" />
-
+-->
     <ScrollView xmlns:tools="http://schemas.android.com/tools"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
@@ -46,12 +46,13 @@
                 android:padding="10dp"
                 android:textAppearance="@android:style/TextAppearance.DeviceDefault.Large" />
 
-            <EditText
+            <AutoCompleteTextView
                 android:id="@+id/form_teaName"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_margin="5dp"
                 android:background="#eeee"
+                android:completionThreshold="0"
                 android:hint="@string/te_namn_exempel"
                 android:inputType="text"
                 android:padding="10dp"
