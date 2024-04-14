@@ -319,21 +319,24 @@ public class MainActivity extends AppCompatActivity {
     private void addTea(Tea tea) {
         teaList().add(tea);
         logTea(tea);
-        addToServer(tea);
+        addToServer(tea, this);
         addToCompletionList(tea);
     }
 
     private void addToCompletionList(Tea tea) {
         if (tea.tea == null) return;
         int count = teaNameCompletionAdapter.getCount();
-        for (int i=0; i<count; i++)
-            if (tea.tea.equalsIgnoreCase(teaNameCompletionAdapter.getItem(i))) return;
+        for (int i=0; i<count; i++) {
+            String item = teaNameCompletionAdapter.getItem(i);
+            Log.d(LOG_TAG, "Completion list: comparing '"+tea.tea+"' to '"+item+"'");
+            if (tea.tea.equalsIgnoreCase(item)) return;
+        }
         teaNameCompletionAdapter.add(tea.tea.toLowerCase());
         teaNameCompletionAdapter.sort(Comparator.naturalOrder());
     }
 
-    private void addToServer(Tea tea) {
-        NetworkService.sendTea(tea, teaServer);
+    private void addToServer(Tea tea, Activity activity) {
+        NetworkService.sendTea(tea, teaServer, activity);
     }
 
     private void logTea(Tea tea) {
@@ -356,8 +359,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private TeaFormField findInvalidField(View view) {
-        if (getEditText(view, R.id.form_teaName).length() == 0) return TeaFormField.TEA;
-        if (getEditText(view, R.id.form_teaPot).length() == 0) return TeaFormField.POT;
+        if (getEditText(view, R.id.form_teaName).isEmpty()) return TeaFormField.TEA;
+        if (getEditText(view, R.id.form_teaPot).isEmpty()) return TeaFormField.POT;
         try {
             Tea.parseVolume(getEditText(view, R.id.form_teaVolume, "3"));
         } catch (Exception e) {
@@ -384,7 +387,7 @@ public class MainActivity extends AppCompatActivity {
     @NonNull
     private String getEditText(View view, int viewId, String defaultValue) {
         String value = getEditText(view, viewId);
-        if (value.length() > 0) return value;
+        if (!value.isEmpty()) return value;
         return defaultValue;
     }
 
@@ -430,11 +433,18 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    public static void setTotal(String total) { PlaceholderFragment.setTotal(total); }
+    public static void setToday(String today) { PlaceholderFragment.setToday(today); }
+
     /**
      * A placeholder fragment containing a simple view.
      */
     public static class PlaceholderFragment extends Fragment {
 
+        static String total = "";
+        static void setTotal(String total) { PlaceholderFragment.total = total; }
+        static String today = "";
+        static void setToday(String today) { PlaceholderFragment.today = today; }
         /**
          * The fragment argument representing the section number for this
          * fragment.
@@ -472,6 +482,8 @@ public class MainActivity extends AppCompatActivity {
 
         private View makeTeaFragment(final LayoutInflater inflater, ViewGroup container) {
             View view = inflater.inflate(R.layout.fragment_teas, container, false);
+            ((TextView) view.findViewById(R.id.todayBrewed)).setText(today);
+            ((TextView) view.findViewById(R.id.totalBrewed)).setText(total);
             final ViewGroup teaContainer = (ViewGroup) view.findViewById(R.id.teaContainer);
             teaList().setInflater(inflater);
             teaList().setContainer(teaContainer);

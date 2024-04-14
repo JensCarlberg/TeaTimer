@@ -1,8 +1,13 @@
 package se.liu.it.jens.teatimer;
 
+import android.app.Activity;
+import android.content.Context;
 import android.net.Uri;
-import android.support.annotation.NonNull;
 import android.util.Log;
+import android.widget.TextView;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -10,8 +15,6 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.URI;
 import java.net.URL;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -30,14 +33,53 @@ public class NetworkService implements Runnable {
         this.callback = callback;
     }
 
-    public static void sendTea(Tea tea, String teaServer) {
-        executorService.submit(
-                new NetworkService(
-                        tea.toUri(addTeaUrl(teaServer)),
-                        new TeaServerCallback() {
-                            @Override public void ok(String result) {}
-                            @Override public void fail(int code, Throwable throwable) {}
-                        }));
+    public static void sendTea(Tea tea, String teaServer, Activity activity) {
+        executorService.submit(sendTeaNetworkService(tea, teaServer, activity));
+    }
+
+    public static NetworkService sendTeaNetworkService(Tea tea, String teaServer, Activity activity) {
+        return new NetworkService(
+                tea.toUri(addTeaUrl(teaServer)),
+                new TeaServerCallback() {
+                    @Override public void ok(String result) {
+                        executorService.submit(getTeaPresentationNetworkService(tea, teaServer, activity));
+                    }
+                    @Override public void fail(int code, Throwable throwable) {}
+                });
+    }
+
+    public static NetworkService getTeaPresentationNetworkService(Tea tea, String teaServer, final Activity activity) {
+        return new NetworkService(
+                Uri.parse(getPresentationUrl(teaServer)),
+                new TeaServerCallback() {
+                    @Override
+                    public void ok(String resultString) {
+                        try {
+                            JSONObject result = new JSONObject(resultString);
+                            final double total = result.getDouble("total");
+                            final double today = result.getDouble("today");
+                            final String totS = "" + total;
+                            MainActivity.setTotal(totS);
+                            final String totD = "" + today;
+                            MainActivity.setToday(totD);
+                            activity.runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    ((TextView) activity.findViewById(R.id.totalBrewed)).setText(totS);
+                                    ((TextView) activity.findViewById(R.id.todayBrewed)).setText(totD);
+                                }
+                            });
+                        } catch (JSONException e) {
+                            Log.e(LOG_TAG, "Could not parse result", e);
+                        }
+                    }
+
+                    @Override
+                    public void fail(int code, Throwable throwable) {
+                        Log.e(LOG_TAG, "Failed retrieving tea presentation data.");
+                    }
+                }
+        );
     }
 
     public static void getUsedTeaNames(TeaServerCallback callback, String teaServer) {
@@ -55,11 +97,26 @@ public class NetworkService implements Runnable {
     }
 
     private static String addTeaUrl(String teaServer) {
-        String serverUrl = teaServer + "/teserver/AddTea";
+        String serverUrl = getTeaServerUrl(teaServer) + "/AddTea";
         if (!serverUrl.contains("://"))
             serverUrl = "http://" + serverUrl;
         return serverUrl;
     }
+
+    private static String getPresentationUrl(String teaServer) {
+        String serverUrl = getTeaServerUrl(teaServer) + "/presentation";
+        if (!serverUrl.contains("://"))
+            serverUrl = "http://" + serverUrl;
+        return serverUrl;
+    }
+
+    private static String getTeaServerUrl(String teaServer) {
+        String serverUrl = teaServer + "/teserver";
+        if (!serverUrl.contains("://"))
+            serverUrl = "http://" + serverUrl;
+        return serverUrl;
+    }
+
     @Override
     public void run() {
         Log.d(LOG_TAG, String.format("Trying GET uri '%s'", uri));
