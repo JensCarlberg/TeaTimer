@@ -4,6 +4,7 @@ import android.content.Context;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Handler;
+import android.util.Log;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -42,7 +43,7 @@ public class SoundHandler implements Runnable {
                     Integer first = currentPlaylist.remove(0);
                     currentPlaylist.add(first);
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    Log.e("SoundHandler", "Could not start playing", e);
                 }
                 // start playing
             }
@@ -64,24 +65,25 @@ public class SoundHandler implements Runnable {
     }
 
     private boolean shouldSoundAlarm(TeaList teaList) {
-        return readyTeas(teaList).size() > 0;
+        return !readyTeas(teaList).isEmpty();
     }
 
     private List<Integer> getSounds(List<Tea> teaList) {
         List<Integer> sounds = new ArrayList<>();
         for(Tea tea: teaList)
             sounds.add(getSound(tea));
-        if (sounds.size() > 0)
-            sounds.add(0, R.raw.hillevi_ditttearklart);
+        if (!sounds.isEmpty())
+            sounds.add(0, R.raw.sofie_ditttearklart);
         return sounds;
     }
 
     private int getSound(Tea tea) {
         switch(tea.tea) {
-            case "Konventste": return R.raw.hillevi_konventsteet;
+            case "Konventste": return R.raw.sofie_konventste;
             case "Golden Nepal": return R.raw.hillevi_goldennepal;
-            case "Lapsang": return R.raw.hillevi_lapsang;
-            case "Sencha Lime": return R.raw.hillevi_senchalime;
+            case "Black Assam": return R.raw.sofie_svartassam;
+            case "Lapsang": return R.raw.sofie_lapsang;
+            case "Sencha Lime": return R.raw.sofie_senchalime;
             default:
                 return getSoundRooibosOrPopuli(tea);
         }
@@ -89,12 +91,12 @@ public class SoundHandler implements Runnable {
 
     private int getSoundRooibosOrPopuli(Tea tea) {
         if ("Röda linjen".equals(tea.pot))
-            return R.raw.hillevi_rooibos;
+            return R.raw.sofie_rooibos;
         if (tea.pot.toLowerCase().contains("populi"))
-            return R.raw.hillevi_folketsval;
+            return R.raw.sofie_folketsval;
         if (tea.teaType.toLowerCase().contains("populi"))
-            return R.raw.hillevi_folketsval;
-        return R.raw.hillevi_annat;
+            return R.raw.sofie_folketsval;
+        return R.raw.sofie_annat;
     }
 
     private List<Tea> readyTeas(TeaList teaList) {
