@@ -80,7 +80,7 @@ public class SoundHandler implements Runnable {
     private int getSound(Tea tea) {
         switch(tea.tea) {
             case "Konventste": return R.raw.sofie_konventste;
-            case "Golden Nepal": return R.raw.hillevi_goldennepal;
+            //case "Golden Nepal": return R.raw.hillevi_goldennepal;
             case "Black Assam": return R.raw.sofie_svartassam;
             case "Lapsang": return R.raw.sofie_lapsang;
             case "Sencha Lime": return R.raw.sofie_senchalime;
