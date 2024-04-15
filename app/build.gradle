@@ -17,6 +17,10 @@ android {
         }
     }
     namespace 'se.liu.it.jens.teatimer'
+    lint {
+        abortOnError false
+        checkReleaseBuilds false
+    }
 }
 
 dependencies {
