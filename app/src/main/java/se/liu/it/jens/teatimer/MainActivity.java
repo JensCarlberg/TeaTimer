@@ -27,6 +27,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.EditText;
@@ -313,11 +314,28 @@ public class MainActivity extends AppCompatActivity {
         ((TextView) view.findViewById(R.id.form_teaPot)).setText("");
         ((TextView) view.findViewById(R.id.form_teaVolume)).setText("");
         ((TextView) view.findViewById(R.id.form_teaSoakTime)).setText("");
-        view.findViewById(R.id.form_teaClear).requestFocus();
+        //view.findViewById(R.id.form_teaClear).requestFocus();
+        //clearFocus();
+        hideKeyboard();
+    }
+
+    private void clearFocus() {
+        View focusView = this.getCurrentFocus();
+        if (focusView != null) focusView.clearFocus();
+    }
+
+    private void hideKeyboard() {
+        View view = this.getCurrentFocus();
+        if (view != null) {
+            InputMethodManager imm = (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
+            if (imm == null) return;
+            imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+        }
     }
 
     private void addTea(Tea tea) {
-        teaList().add(tea);
+        if (tea.soakSeconds > 0)
+            teaList().add(tea);
         logTea(tea);
         addToServer(tea, this);
         addToCompletionList(tea);
