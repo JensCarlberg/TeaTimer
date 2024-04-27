@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:color="http://schemas.android.com/apk/res-auto">
+
+    <com.google.android.material.progressindicator.CircularProgressIndicator
+        android:id="@+id/myProgress"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:indeterminate="false"
+        android:color="#000"
+        android:foregroundTint="#fff"
+        android:backgroundTint="#fff"
+        android:max="100"
+        tools:progress="70"
+        />
+
+    <TextView
+        android:id="@+id/myTextProgress"
+        android:layout_alignStart="@id/myProgress"
+        android:layout_alignTop="@id/myProgress"
+        android:layout_alignEnd="@id/myProgress"
+        android:layout_alignBottom="@id/myProgress"
+        android:background="@android:color/transparent"
+        android:layout_height="wrap_content"
+        android:layout_width="wrap_content"
+        android:gravity="center"
+        android:textSize="60sp"
+        android:textStyle="bold"
+        tools:text="123" />
+
+</RelativeLayout>

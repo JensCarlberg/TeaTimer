@@ -6,8 +6,8 @@ import android.widget.EditText;
 
 import com.google.common.collect.ComparisonChain;
 
-import java.net.URI;
 import java.util.Date;
+import java.util.Locale;
 
 public class Tea implements Comparable<Tea> {
 
@@ -19,7 +19,7 @@ public class Tea implements Comparable<Tea> {
         SOAK("Drag"),
         UNKNOWN("");
 
-        private String type;
+        private final String type;
 
         TeaField(String type) {
             this.type = type;
@@ -101,7 +101,7 @@ public class Tea implements Comparable<Tea> {
         private String getText(EditText view) {
             String text = view.getText().toString();
             if (text == null) return null;
-            if (text.trim().length() == 0) return null;
+            if (text.trim().isEmpty()) return null;
             return text.trim();
         }
 
@@ -166,8 +166,18 @@ public class Tea implements Comparable<Tea> {
 
     static String brewText(long timeLeft) {
         if (timeLeft < 1) return "Klar!";
-        if (timeLeft < 60001) return "" + timeLeft / 1000;
-        return "> " + timeLeft / 60000 + "m";
+        if (timeLeft > 60000) return minsAndSecs(timeLeft);
+        return secs(timeLeft);
+    }
+
+    static String secs(long timeLeft) {
+        return "" + timeLeft / 1000;
+    }
+
+    static String minsAndSecs(long timeLeft) {
+        long min = timeLeft / 60000;
+        long secs = (timeLeft % 60000) / 1000;
+        return String.format(Locale.US, "%dm%02ds", min, secs);
     }
 
     @Override
