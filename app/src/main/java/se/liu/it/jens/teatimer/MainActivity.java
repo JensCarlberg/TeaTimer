@@ -21,6 +21,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowInsetsController;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.LinearLayout;
@@ -57,7 +58,7 @@ public class MainActivity extends AppCompatActivity {
     enum Fragments {
         TIMERS(0),
         FORM(1),
-        SETTINGS(2);
+        /** @noinspection unused*/ SETTINGS(2);
 
         private final int id;
 
@@ -89,8 +90,13 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         // Remove reserved space for the status bar if present
-        View decorView = getWindow().getDecorView();
-        decorView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN | View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
+        getWindow().setDecorFitsSystemWindows(false);
+        final WindowInsetsController insetsController = getWindow().getInsetsController();
+        if (insetsController != null) {
+            insetsController.hide(android.view.WindowInsets.Type.statusBars());
+            insetsController.setSystemBarsBehavior(
+                    WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
+        }
         getWindow().setStatusBarColor(android.graphics.Color.TRANSPARENT);
 
         // Initialize ViewPager and Adapter
@@ -207,7 +213,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     void processIntent(Intent intent) {
-        Tag parcelableExtra = (Tag) intent.getParcelableExtra(NfcAdapter.EXTRA_TAG);
+        Tag parcelableExtra = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG);
         if (parcelableExtra == null) return;
         String id = bytesToHexString( parcelableExtra.getId());
         if (id == null) return;

@@ -1,11 +1,6 @@
 package se.liu.it.jens.teatimer;
 
-import android.os.CountDownTimer;
-import android.view.LayoutInflater;
-import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
-import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.SortedList;
@@ -20,10 +15,6 @@ public class TeaList extends SortedList<Tea> implements Iterable<Tea> {
     }
 
     ViewGroup teaContainer = null;
-    private LayoutInflater inflater = null;
-
-    public void setContainer(ViewGroup container) { teaContainer = container; }
-    public void setInflater(LayoutInflater inflater) { this.inflater = inflater; }
 
     public TeaList() {
         super(Tea.class, new Callback<>() {
@@ -58,39 +49,6 @@ public class TeaList extends SortedList<Tea> implements Iterable<Tea> {
             public void onChanged(int position, int count) {
             }
         });
-    }
-
-    public View getSmallView(final Tea tea, LayoutInflater inflater, final ViewGroup parent) {
-        final View rowView = inflater.inflate(R.layout.tea, parent, false);
-        final View timerContainer = rowView.findViewById(R.id.timer_container);
-        final Button soakTime = rowView.findViewById(R.id.teaTimerDismiss);
-        ((TextView) rowView.findViewById(R.id.teaPot)).setText(tea.teaAndPot());
-        long remainingCount = tea.brewStopTime - System.currentTimeMillis();
-        if (remainingCount < 1) timerContainer.setBackgroundColor(0xff00ff00);
-        final CountDownTimer timer = new CountDownTimer(remainingCount, 1000) {
-            public void onTick(long millisUntilFinished) {
-                soakTime.setText(Tea.brewText(millisUntilFinished));
-            }
-
-            public void onFinish() {
-                soakTime.setText(Tea.brewText(0));
-                timerContainer.setBackgroundColor(0xff00ff00);
-                timerContainer.setClickable(true);
-            }
-        }.start();
-
-        soakTime.setOnClickListener(getOnClickListener(tea, timer));
-        timerContainer.setOnClickListener(getOnClickListener(tea, timer));
-        timerContainer.setClickable(false);
-
-        return rowView;
-    }
-
-    private View.OnClickListener getOnClickListener(final Tea tea, final CountDownTimer timer) {
-        return clickView -> {
-            timer.cancel();
-            remove(tea);
-        };
     }
 
     @Override
