@@ -5,13 +5,10 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
-import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.SortedList;
-
-import com.google.android.material.progressindicator.CircularProgressIndicator;
 
 public class TeaList extends SortedList<Tea> implements Iterable<Tea> {
     public interface TeaListListener {
@@ -89,38 +86,6 @@ public class TeaList extends SortedList<Tea> implements Iterable<Tea> {
         return rowView;
     }
 
-    public View getLargeView(final Tea tea, LayoutInflater inflater, final ViewGroup parent) {
-        final View rowView = inflater.inflate(R.layout.tea_progress, parent, false);
-        final CircularProgressIndicator progress = rowView.findViewById(R.id.teaTimerProgress);
-        final TextView soakTimeLeft = rowView.findViewById(R.id.teaTimerProgressText);
-        final ImageView dismiss = rowView.findViewById(R.id.teaTimerProgressDismiss);
-
-        long remainingCount = tea.brewStopTime - System.currentTimeMillis();
-        final CountDownTimer timer = new CountDownTimer(remainingCount, 1000) {
-            public void onTick(long millisUntilFinished) {
-                soakTimeLeft.setText(Tea.brewText(millisUntilFinished));
-                progress.setProgress((int) (millisUntilFinished * 10000 / (tea.soakSeconds * 1000)));
-            }
-
-            public void onFinish() {
-                soakTimeLeft.setText(Tea.brewText(0));
-                rowView.setBackgroundColor(0xff00ff00);
-                rowView.setClickable(true);
-            }
-        }.start();
-
-        dismiss.setOnClickListener(getOnClickListener(tea, timer));
-        rowView.setOnClickListener(getOnClickListener(tea, timer));
-        rowView.setClickable(false);
-        dismiss.setClickable(true);
-        if (remainingCount < 1) {
-            rowView.setBackgroundColor(0xff00ff00);
-            rowView.setClickable(true);
-        }
-
-        return rowView;
-    }
-
     private View.OnClickListener getOnClickListener(final Tea tea, final CountDownTimer timer) {
         return clickView -> {
             timer.cancel();
@@ -131,7 +96,6 @@ public class TeaList extends SortedList<Tea> implements Iterable<Tea> {
     @Override
     public int add(Tea tea) {
         int pos = super.add(tea);
-        addTeaView(tea, pos);
         if (listener != null) listener.onTeaListChanged();
         return pos;
     }
@@ -148,20 +112,6 @@ public class TeaList extends SortedList<Tea> implements Iterable<Tea> {
     private void removeTeaView(int pos) {
         if (teaContainer == null) return;
         teaContainer.removeViewAt(pos);
-    }
-
-    private void addTeaView(Tea tea, int pos) {
-        if (teaContainer == null || inflater == null) return;
-        View view = getLargeView(tea, inflater, teaContainer);
-        teaContainer.addView(view, pos);
-        if (pos == 0) {
-            view.findViewById(R.id.teaTimerProgressLayout).setVisibility(View.VISIBLE);
-            view.findViewById(R.id.teaTimerTextRowLayout).setVisibility(View.GONE);
-        } else {
-            view.findViewById(R.id.teaTimerProgressLayout).setVisibility(View.GONE);
-            view.findViewById(R.id.teaTimerTextRowLayout).setVisibility(View.VISIBLE);
-        }
-
     }
 
     @NonNull

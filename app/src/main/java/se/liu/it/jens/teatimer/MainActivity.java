@@ -512,24 +512,39 @@ public class MainActivity extends AppCompatActivity {
             for (Tea tea : MainActivity.teaList()) {
                 if (i >= count) break;
                 View itemView = teaContainer.getChildAt(i);
-                if (i == 0) {
-                    com.google.android.material.progressindicator.CircularProgressIndicator progress = itemView.findViewById(R.id.teaTimerProgress);
-                    TextView timeLeft = itemView.findViewById(R.id.teaTimerProgressText);
-                    long remaining = tea.brewStopTime - now;
-                    if (remaining < 1) {
-                        itemView.setBackgroundResource(R.color.colorTeaDone);
-                        itemView.setOnClickListener(v -> MainActivity.teaList().remove(tea));
-                        if (progress != null) progress.setTrackColor(getResources().getColor(R.color.colorTeaDone));
-                    }
-                    int max = 10000;
-                    int prog = (tea.soakSeconds > 0) ? (int) Math.max(0, Math.min(max, (remaining * max) / (tea.soakSeconds * 1000L))) : 0;
-                    if (progress != null) progress.setProgress(prog);
-                    if (timeLeft != null) timeLeft.setText(Tea.brewText(remaining));
-                }
-                // If you want to add time left for other teas, do it here
+                if (i == 0)
+                    updateFirstTeaProgress(tea, itemView, now);
+                else
+                    updateOtherTeaProgress(tea, itemView, now);
                 i++;
             }
         }
+
+        private void updateOtherTeaProgress(Tea tea, View itemView, long now) {
+            TextView timeLeft = itemView.findViewById(R.id.teaTimerDismiss);
+            long remaining = tea.brewStopTime - now;
+            if (remaining < 1) {
+                itemView.setBackgroundResource(R.color.colorTeaDone);
+                itemView.setOnClickListener(v -> MainActivity.teaList().remove(tea));
+            }
+            if (timeLeft != null) timeLeft.setText(Tea.brewText(remaining));
+        }
+
+        private void updateFirstTeaProgress(Tea tea, View itemView, long now) {
+            com.google.android.material.progressindicator.CircularProgressIndicator progress = itemView.findViewById(R.id.teaTimerProgress);
+            TextView timeLeft = itemView.findViewById(R.id.teaTimerProgressText);
+            long remaining = tea.brewStopTime - now;
+            if (remaining < 1) {
+                itemView.setBackgroundResource(R.color.colorTeaDone);
+                itemView.setOnClickListener(v -> MainActivity.teaList().remove(tea));
+                if (progress != null) progress.setTrackColor(getResources().getColor(R.color.colorTeaDone));
+            }
+            int max = 10000;
+            int prog = (tea.soakSeconds > 0) ? (int) Math.max(0, Math.min(max, (remaining * max) / (tea.soakSeconds * 1000L))) : 0;
+            if (progress != null) progress.setProgress(prog);
+            if (timeLeft != null) timeLeft.setText(Tea.brewText(remaining));
+        }
+
         public void refreshTeaList() {
             rebuildTeaListViews();
         }
