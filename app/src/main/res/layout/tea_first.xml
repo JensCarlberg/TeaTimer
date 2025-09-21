@@ -56,5 +56,5 @@
         android:gravity="center"
         android:textSize="40sp"
         android:textStyle="bold"
-        tools:text="Rooibos\nTermos 1" />
+        tools:text="Konventste\nKonventste vagn" />
 </LinearLayout>
