@@ -10,17 +10,11 @@ import android.nfc.NfcAdapter;
 import android.nfc.Tag;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.Parcelable;
 import android.os.PersistableBundle;
 import android.os.Vibrator;
-import android.support.annotation.NonNull;
-import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentPagerAdapter;
-import android.support.v4.view.ViewPager;
-import android.support.v7.app.AppCompatActivity;
-import android.text.Editable;
-import android.text.TextWatcher;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -28,21 +22,22 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
-import android.widget.ArrayAdapter;
-import android.widget.AutoCompleteTextView;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import org.json.JSONArray;
-import org.json.JSONObject;
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentPagerAdapter;
+import androidx.viewpager.widget.PagerAdapter;
+import androidx.viewpager.widget.ViewPager;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.Locale;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -54,7 +49,6 @@ public class MainActivity extends AppCompatActivity {
     private static final TeaList teaList = new TeaList();
     public static TeaList teaList() { return teaList; }
     private static SoundHandler soundHandler;
-    public static ArrayAdapter<String> teaNameCompletionAdapter;
     public static String lastId = "";
     public static long lastTime = System.currentTimeMillis() - TIME_BETWEEN_SAME_TAG_READ;
 
@@ -86,19 +80,8 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    /**
-     * The {@link android.support.v4.view.PagerAdapter} that will provide
-     * fragments for each of the sections. We use a
-     * {@link FragmentPagerAdapter} derivative, which will keep every
-     * loaded fragment in memory. If this becomes too memory intensive, it
-     * may be best to switch to a
-     * {@link android.support.v4.app.FragmentStatePagerAdapter}.
-     */
-    SectionsPagerAdapter mSectionsPagerAdapter;
+    PagerAdapter mSectionsPagerAdapter;
 
-    /**
-     * The {@link ViewPager} that will host the section contents.
-     */
     ViewPager mViewPager;
 
     @Override
@@ -106,12 +89,9 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // Create the teaAdapter that will return a fragment for each of the three
-        // primary sections of the activity.
+        // Initialize ViewPager and Adapter
+        mViewPager = findViewById(R.id.pager);
         mSectionsPagerAdapter = new SectionsPagerAdapter(getSupportFragmentManager());
-
-        // Set up the ViewPager with the sections teaAdapter.
-        mViewPager = (ViewPager) findViewById(R.id.pager);
         mViewPager.setAdapter(mSectionsPagerAdapter);
 
         nfcAdapter = NfcAdapter.getDefaultAdapter(this);
@@ -171,11 +151,14 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
-    public void onSaveInstanceState(Bundle outState, PersistableBundle outPersistentState) {
+    public void onSaveInstanceState(@NonNull Bundle outState, @NonNull PersistableBundle outPersistentState) {
         super.onSaveInstanceState(outState, outPersistentState);
-        if (outState == null)
-            return;
         outState.putString(TESERVER_ADDRESS_KEY, teaServer);
+    }
+
+    public void onRestoreInstanceState(@NonNull Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
+        teaServer = savedInstanceState.getString(TESERVER_ADDRESS_KEY, TESERVER_ADDRESS_DEFAULT);
     }
 
     public static void setupForegroundDispatch(final Activity activity, NfcAdapter adapter) {
@@ -183,7 +166,7 @@ public class MainActivity extends AppCompatActivity {
         final Intent intent = new Intent(activity.getApplicationContext(), activity.getClass());
         intent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
 
-        final PendingIntent pendingIntent = PendingIntent.getActivity(activity.getApplicationContext(), 0, intent, 0);
+        final PendingIntent pendingIntent = PendingIntent.getActivity(activity.getApplicationContext(), 0, intent, PendingIntent.FLAG_IMMUTABLE);
 
         IntentFilter[] filters = new IntentFilter[1];
         String[][] techList = new String[][]{};
@@ -212,6 +195,7 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
         String action = intent.getAction();
         String actionNdefDiscovered = NfcAdapter.ACTION_NDEF_DISCOVERED;
         if (actionNdefDiscovered.equals(action))
@@ -338,19 +322,6 @@ public class MainActivity extends AppCompatActivity {
             teaList().add(tea);
         logTea(tea);
         addToServer(tea, this);
-        addToCompletionList(tea);
-    }
-
-    private void addToCompletionList(Tea tea) {
-        if (tea.tea == null) return;
-        int count = teaNameCompletionAdapter.getCount();
-        for (int i=0; i<count; i++) {
-            String item = teaNameCompletionAdapter.getItem(i);
-            Log.d(LOG_TAG, "Completion list: comparing '"+tea.tea+"' to '"+item+"'");
-            if (tea.tea.equalsIgnoreCase(item)) return;
-        }
-        teaNameCompletionAdapter.add(tea.tea.toLowerCase());
-        teaNameCompletionAdapter.sort(Comparator.naturalOrder());
     }
 
     private void addToServer(Tea tea, Activity activity) {
@@ -414,6 +385,7 @@ public class MainActivity extends AppCompatActivity {
         return ((EditText) view.findViewById(viewId)).getText().toString().trim();
     }
 
+
     /**
      * A {@link FragmentPagerAdapter} that returns a fragment corresponding to
      * one of the sections/tabs/pages.
@@ -426,148 +398,162 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         public Fragment getItem(int position) {
-            // getItem is called to instantiate the fragment for the given page.
-            // Return a PlaceholderFragment (defined as a static inner class below).
-            return PlaceholderFragment.newInstance(position + 1);
+            switch (position) {
+                case 0:
+                    return new TeasFragment();
+                case 1:
+                    return new EnterTeaFragment();
+                case 2:
+                    return new ConfigurationFragment();
+                default:
+                    return null;
+            }
         }
 
         @Override
         public int getCount() {
-            return Fragments.values().length;
+            return 3;
         }
 
         @Override
         public CharSequence getPageTitle(int position) {
-            Locale l = Locale.getDefault();
             switch (position) {
                 case 0:
-                    return "Téer som drar".toUpperCase(l);
+                    return "Téer som drar";
                 case 1:
-                    return "Lägg till te".toUpperCase(l);
+                    return "Lägg till te";
                 case 2:
-                    return "Inställningar".toUpperCase(l);
+                    return "Inställningar";
             }
             return null;
         }
     }
 
-    public static void setTotal(String total) { PlaceholderFragment.setTotal(total); }
-    public static void setToday(String today) { PlaceholderFragment.setToday(today); }
-
-    /**
-     * A placeholder fragment containing a simple view.
-     */
-    public static class PlaceholderFragment extends Fragment {
-
-        static String total = "";
-        static void setTotal(String total) { PlaceholderFragment.total = total; }
-        static String today = "";
-        static void setToday(String today) { PlaceholderFragment.today = today; }
-        /**
-         * The fragment argument representing the section number for this
-         * fragment.
-         */
-        private static final String ARG_SECTION_NUMBER = "section_number";
-
-        /**
-         * Returns a new instance of this fragment for the given section
-         * number.
-         */
-        public static PlaceholderFragment newInstance(int sectionNumber) {
-            PlaceholderFragment fragment = new PlaceholderFragment();
-            Bundle args = new Bundle();
-            args.putInt(ARG_SECTION_NUMBER, sectionNumber);
-            fragment.setArguments(args);
-            return fragment;
-        }
-
-        public PlaceholderFragment() {
-        }
-
+    // --- Three Fragments ---
+    public static class TeasFragment extends Fragment implements TeaList.TeaListListener {
+        private TextView todayBrewedView;
+        private TextView totalBrewedView;
+        private LinearLayout teaContainer;
+        private String pendingTodayValue = null;
+        private String pendingTotalValue = null;
+        private Handler timerHandler = new Handler(Looper.getMainLooper());
+        private final Runnable timerRunnable = new Runnable() {
+            @Override
+            public void run() {
+                updateTeaList();
+                timerHandler.postDelayed(this, 100);
+            }
+        };
         @Override
-        public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                                 Bundle savedInstanceState) {
-            int sectionNumber = getArguments().getInt(ARG_SECTION_NUMBER);
-            switch (sectionNumber) {
-                case 1:
-                    return makeTeaFragment(inflater, container);
-                case 2:
-                    return makeFormFragment(inflater, container);
-                default:
-                    return makeSettingsFragment(inflater, container);
+        public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+            View v = inflater.inflate(R.layout.fragment_teas, container, false);
+            todayBrewedView = v.findViewById(R.id.todayBrewed);
+            totalBrewedView = v.findViewById(R.id.totalBrewed);
+            teaContainer = v.findViewById(R.id.teaContainer);
+            MainActivity.teaList().setListener(this);
+            if (pendingTodayValue != null) {
+                todayBrewedView.setText(pendingTodayValue);
+                pendingTodayValue = null;
+            }
+            if (pendingTotalValue != null) {
+                totalBrewedView.setText(pendingTotalValue);
+                pendingTotalValue = null;
+            }
+            updateTeaList();
+            return v;
+        }
+        @Override
+        public void onTeaListChanged() {
+            if (getActivity() != null) {
+                getActivity().runOnUiThread(this::rebuildTeaListViews);
             }
         }
-
-        private View makeTeaFragment(final LayoutInflater inflater, ViewGroup container) {
-            View view = inflater.inflate(R.layout.fragment_teas, container, false);
-            ((TextView) view.findViewById(R.id.todayBrewed)).setText(today);
-            ((TextView) view.findViewById(R.id.totalBrewed)).setText(total);
-            final ViewGroup teaContainer = (ViewGroup) view.findViewById(R.id.teaContainer);
-            teaList().setInflater(inflater);
-            teaList().setContainer(teaContainer);
-            for (int i = 0; i < teaList.size(); i++)
-                teaContainer.addView(teaList.getView(teaList.get(i), inflater, teaContainer));
-
-            return view;
-        }
-
-        private View makeFormFragment(LayoutInflater inflater, ViewGroup container) {
-            View view = inflater.inflate(R.layout.fragment_form, container, false);
-
-            AutoCompleteTextView textView = (AutoCompleteTextView)view.findViewById(R.id.form_teaName);
-            if (teaNameCompletionAdapter == null)
-                teaNameCompletionAdapter = new ArrayAdapter<String>(
-                        getContext(),
-                        R.layout.tea_name_item_1line,
-                        new ArrayList<String>());
-            textView.setAdapter(teaNameCompletionAdapter);
-
-            NetworkService.getUsedTeaNames(new TeaServerCallback() {
-                @Override public void ok(String result) {
-                    addTeasToAdapter(result); }
-                @Override public void fail(int code, Throwable throwable) {
-                    Log.w(LOG_TAG, "Det sket sig...");
+        private void rebuildTeaListViews() {
+            if (teaContainer == null) return;
+            teaContainer.removeAllViews();
+            int i = 0;
+            for (Tea tea : MainActivity.teaList()) {
+                View itemView;
+                if (i == 0) {
+                    itemView = LayoutInflater.from(getContext()).inflate(R.layout.tea_first, teaContainer, false);
+                    TextView teaText = itemView.findViewById(R.id.teaTimerTeaText);
+                    if (teaText != null) teaText.setText(tea.teaAndPot());
+                    View dismiss = itemView.findViewById(R.id.teaTimerProgressDismiss);
+                    if (dismiss != null) dismiss.setOnClickListener(v -> MainActivity.teaList().remove(tea));
+                } else {
+                    itemView = LayoutInflater.from(getContext()).inflate(R.layout.tea, teaContainer, false);
+                    TextView teaText = itemView.findViewById(R.id.teaPot);
+                    if (teaText != null) teaText.setText(tea.teaAndPot());
+                    View dismiss = itemView.findViewById(R.id.teaTimerDismiss);
+                    if (dismiss != null) dismiss.setOnClickListener(v -> MainActivity.teaList().remove(tea));
                 }
-            }, teaServer);
-            return view;
-        }
-
-        private void addTeasToAdapter(String result) {
-            try {
-                JSONObject jsonObject = new JSONObject(result);
-                if (!jsonObject.has("teaNames")) return;
-                JSONArray teaNames = jsonObject.getJSONArray("teaNames");
-                for (int i=0; i<teaNames.length(); i++)
-                    teaNameCompletionAdapter.add(teaNames.getString(i).toLowerCase());
-                teaNameCompletionAdapter.sort(Comparator.naturalOrder());
-            } catch (Exception e) {
-                Log.w(LOG_TAG, String.format("Could not add server data to adapter: '%s'", result), e);
+                teaContainer.addView(itemView);
+                i++;
             }
         }
-
-        private View makeSettingsFragment(LayoutInflater inflater, ViewGroup container) {
-            View view = inflater.inflate(R.layout.fragment_settings, container, false);
-            TextView server = (TextView) view.findViewById(R.id.setting_teaServer);
-            server.setText(getTeaServer());
-            server.addTextChangedListener(new TextWatcher() {
-                @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
-                @Override public void afterTextChanged(Editable s) { }
-
-                @Override
-                public void onTextChanged(CharSequence s, int start, int before, int count) {
-                    setTeaServer(s.toString());
+        private void updateTeaList() {
+            if (teaContainer == null) return;
+            int count = teaContainer.getChildCount();
+            int i = 0;
+            long now = System.currentTimeMillis();
+            for (Tea tea : MainActivity.teaList()) {
+                if (i >= count) break;
+                View itemView = teaContainer.getChildAt(i);
+                if (i == 0) {
+                    com.google.android.material.progressindicator.CircularProgressIndicator progress = itemView.findViewById(R.id.teaTimerProgress);
+                    TextView timeLeft = itemView.findViewById(R.id.teaTimerProgressText);
+                    long remaining = tea.brewStopTime - now;
+                    int max = 10000;
+                    int prog = (tea.soakSeconds > 0) ? (int) Math.max(0, Math.min(max, (remaining * max) / (tea.soakSeconds * 1000))) : 0;
+                    if (progress != null) progress.setProgress(prog);
+                    if (timeLeft != null) timeLeft.setText(Tea.brewText(remaining));
                 }
-            });
-            return view;
+                // If you want to add time left for other teas, do it here
+                i++;
+            }
         }
-
-        public void setTeaServer(String server) {
-            if (server == null || server.trim().length() == 0) return;
-            teaServer = server;
+        public void refreshTeaList() {
+            rebuildTeaListViews();
         }
+        public void setTodayBrewed(String value) {
+            if (todayBrewedView != null) {
+                todayBrewedView.setText(value);
+            } else {
+                pendingTodayValue = value;
+            }
+        }
+        public void setTotalBrewed(String value) {
+            if (totalBrewedView != null) {
+                totalBrewedView.setText(value);
+            } else {
+                pendingTotalValue = value;
+            }
+        }
+        @Override
+        public void onResume() {
+            super.onResume();
+            timerHandler.post(timerRunnable);
+        }
+        @Override
+        public void onPause() {
+            super.onPause();
+            timerHandler.removeCallbacks(timerRunnable);
+        }
+    }
 
-        public String getTeaServer() {
-            return teaServer;
+    public static class EnterTeaFragment extends Fragment {
+        @Override
+        public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+            // Replace with your actual layout for entering tea to brew
+            return inflater.inflate(R.layout.fragment_form, container, false);
+        }
+    }
+
+    public static class ConfigurationFragment extends Fragment {
+        @Override
+        public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+            // Replace with your actual layout for configuration
+            return inflater.inflate(R.layout.fragment_settings, container, false);
         }
     }
 }

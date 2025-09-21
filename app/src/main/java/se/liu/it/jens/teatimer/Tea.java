@@ -177,7 +177,7 @@ public class Tea implements Comparable<Tea> {
     static String minsAndSecs(long timeLeft) {
         long min = timeLeft / 60000;
         long secs = (timeLeft % 60000) / 1000;
-        return String.format(Locale.US, "%dm%02ds", min, secs);
+        return String.format(Locale.US, "%d:%02d", min, secs);
     }
 
     @Override
