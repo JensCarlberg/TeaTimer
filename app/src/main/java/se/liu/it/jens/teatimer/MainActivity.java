@@ -443,6 +443,20 @@ public class MainActivity extends AppCompatActivity {
                 timerHandler.postDelayed(this, 100);
             }
         };
+        private boolean timerActive = false;
+        @Override
+        public void setMenuVisibility(boolean menuVisible) {
+            super.setMenuVisibility(menuVisible);
+            if (menuVisible) {
+                if (!timerActive) {
+                    timerHandler.post(timerRunnable);
+                    timerActive = true;
+                }
+            } else {
+                timerHandler.removeCallbacks(timerRunnable);
+                timerActive = false;
+            }
+        }
         @Override
         public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
             View v = inflater.inflate(R.layout.fragment_teas, container, false);
@@ -531,12 +545,23 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onResume() {
             super.onResume();
-            timerHandler.post(timerRunnable);
+            rebuildTeaListViews(); // Ensure tea list is rebuilt when fragment becomes visible
+            if (getUserVisibleHintCompat()) {
+                timerHandler.post(timerRunnable);
+                timerActive = true;
+            }
         }
         @Override
         public void onPause() {
             super.onPause();
             timerHandler.removeCallbacks(timerRunnable);
+            timerActive = false;
+        }
+        private boolean getUserVisibleHintCompat() {
+            // setMenuVisibility is always called, but getUserVisibleHint is deprecated in API 29+.
+            // This helper returns true if the fragment is visible to the user.
+            View view = getView();
+            return view != null && view.getWindowToken() != null && getUserVisibleHint();
         }
     }
 
