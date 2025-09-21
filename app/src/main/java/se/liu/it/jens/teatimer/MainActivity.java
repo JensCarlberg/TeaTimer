@@ -516,6 +516,11 @@ public class MainActivity extends AppCompatActivity {
                     com.google.android.material.progressindicator.CircularProgressIndicator progress = itemView.findViewById(R.id.teaTimerProgress);
                     TextView timeLeft = itemView.findViewById(R.id.teaTimerProgressText);
                     long remaining = tea.brewStopTime - now;
+                    if (remaining < 1) {
+                        itemView.setBackgroundResource(R.color.colorTeaDone);
+                        itemView.setOnClickListener(v -> MainActivity.teaList().remove(tea));
+                        if (progress != null) progress.setTrackColor(getResources().getColor(R.color.colorTeaDone));
+                    }
                     int max = 10000;
                     int prog = (tea.soakSeconds > 0) ? (int) Math.max(0, Math.min(max, (remaining * max) / (tea.soakSeconds * 1000L))) : 0;
                     if (progress != null) progress.setProgress(prog);
