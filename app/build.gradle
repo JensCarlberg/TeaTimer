@@ -1,7 +1,7 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 36;
+    compileSdkVersion 36
     defaultConfig {
         applicationId "se.liu.it.jens.teatimer"
         minSdkVersion 30

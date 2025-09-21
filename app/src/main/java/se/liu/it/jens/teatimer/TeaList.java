@@ -8,6 +8,7 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.SortedList;
 
 import com.google.android.material.progressindicator.CircularProgressIndicator;
@@ -28,9 +29,11 @@ public class TeaList extends SortedList<Tea> implements Iterable<Tea> {
     public void setInflater(LayoutInflater inflater) { this.inflater = inflater; }
 
     public TeaList() {
-        super(Tea.class, new Callback<Tea>() {
+        super(Tea.class, new Callback<>() {
             @Override
-            public int compare(Tea o1, Tea o2) { return o1.compareTo(o2); }
+            public int compare(Tea o1, Tea o2) {
+                return o1.compareTo(o2);
+            }
 
             @Override
             public boolean areContentsTheSame(Tea oldItem, Tea newItem) {
@@ -42,10 +45,21 @@ public class TeaList extends SortedList<Tea> implements Iterable<Tea> {
                 return item1 == item2;
             }
 
-            @Override public void onInserted(int position, int count) { }
-            @Override public void onRemoved(int position, int count) { }
-            @Override public void onMoved(int fromPosition, int toPosition) { }
-            @Override public void onChanged(int position, int count) { }
+            @Override
+            public void onInserted(int position, int count) {
+            }
+
+            @Override
+            public void onRemoved(int position, int count) {
+            }
+
+            @Override
+            public void onMoved(int fromPosition, int toPosition) {
+            }
+
+            @Override
+            public void onChanged(int position, int count) {
+            }
         });
     }
 
@@ -150,14 +164,17 @@ public class TeaList extends SortedList<Tea> implements Iterable<Tea> {
 
     }
 
+    @NonNull
     @Override
     public java.util.Iterator<Tea> iterator() {
-        return new java.util.Iterator<Tea>() {
+        return new java.util.Iterator<>() {
             private int index = 0;
+
             @Override
             public boolean hasNext() {
                 return index < size();
             }
+
             @Override
             public Tea next() {
                 return get(index++);

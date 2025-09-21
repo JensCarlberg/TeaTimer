@@ -1,7 +1,6 @@
 package se.liu.it.jens.teatimer;
 
 import android.app.Activity;
-import android.content.Context;
 import android.net.Uri;
 import android.util.Log;
 import android.widget.TextView;
@@ -16,6 +15,7 @@ import java.io.Reader;
 import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.text.DecimalFormat;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -23,10 +23,10 @@ import java.util.concurrent.Executors;
 public class NetworkService implements Runnable {
 
     private static final String LOG_TAG = NetworkService.class.getSimpleName();
-    private static ExecutorService executorService = Executors.newSingleThreadExecutor();
-    private static DecimalFormat decimalFormat =  new DecimalFormat("#0.0");
-    private Uri uri;
-    private TeaServerCallback callback;
+    private static final ExecutorService executorService = Executors.newSingleThreadExecutor();
+    private static final DecimalFormat decimalFormat =  new DecimalFormat("#0.0");
+    private final Uri uri;
+    private final TeaServerCallback callback;
     private boolean sent = false;
     private int retries = 3;
 
@@ -76,12 +76,7 @@ public class NetworkService implements Runnable {
     }
 
     private static void setTextInView(int totalBrewedView, String totS, Activity activity) {
-        activity.runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                ((TextView) activity.findViewById(totalBrewedView)).setText(totS);
-            }
-        });
+        activity.runOnUiThread(() -> ((TextView) activity.findViewById(totalBrewedView)).setText(totS));
     }
 
     public static void getUsedTeaNames(TeaServerCallback callback, String teaServer) {
@@ -171,10 +166,10 @@ public class NetworkService implements Runnable {
         return response >= 200 && response < 300;
     }
 
-    public String readIt(InputStream stream) throws IOException, UnsupportedEncodingException {
+    public String readIt(InputStream stream) throws IOException {
         StringBuilder serverResponse = new StringBuilder();
-        Reader reader = new InputStreamReader(stream, "UTF-8");
-        int readChars = 0;
+        Reader reader = new InputStreamReader(stream, StandardCharsets.UTF_8);
+        int readChars;
         char[] buffer = new char[16384];
         while ((readChars = reader.read(buffer)) != -1)
             serverResponse.append(buffer, 0, readChars);

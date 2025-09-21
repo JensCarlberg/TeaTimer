@@ -88,6 +88,10 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        // Remove reserved space for the status bar if present
+        View decorView = getWindow().getDecorView();
+        decorView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN | View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
+        getWindow().setStatusBarColor(android.graphics.Color.TRANSPARENT);
 
         // Initialize ViewPager and Adapter
         mViewPager = findViewById(R.id.pager);
@@ -203,7 +207,9 @@ public class MainActivity extends AppCompatActivity {
     }
 
     void processIntent(Intent intent) {
-        String id = bytesToHexString( ((Tag) intent.getParcelableExtra(NfcAdapter.EXTRA_TAG)).getId());
+        Tag parcelableExtra = (Tag) intent.getParcelableExtra(NfcAdapter.EXTRA_TAG);
+        if (parcelableExtra == null) return;
+        String id = bytesToHexString( parcelableExtra.getId());
         if (id == null) return;
         if (id.equals(lastId) && (System.currentTimeMillis() - lastTime) < TIME_BETWEEN_SAME_TAG_READ) {
             ((Vibrator) getSystemService(Context.VIBRATOR_SERVICE)).vibrate(new long[] { 0, 100, 100, 100, 100, 100 }, -1);
@@ -398,16 +404,12 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         public Fragment getItem(int position) {
-            switch (position) {
-                case 0:
-                    return new TeasFragment();
-                case 1:
-                    return new EnterTeaFragment();
-                case 2:
-                    return new ConfigurationFragment();
-                default:
-                    return null;
-            }
+            return switch (position) {
+                case 0 -> new TeasFragment();
+                case 1 -> new EnterTeaFragment();
+                case 2 -> new ConfigurationFragment();
+                default -> null;
+            };
         }
 
         @Override
@@ -417,15 +419,12 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         public CharSequence getPageTitle(int position) {
-            switch (position) {
-                case 0:
-                    return "Téer som drar";
-                case 1:
-                    return "Lägg till te";
-                case 2:
-                    return "Inställningar";
-            }
-            return null;
+            return switch (position) {
+                case 0 -> "Téer som drar";
+                case 1 -> "Lägg till te";
+                case 2 -> "Inställningar";
+                default -> null;
+            };
         }
     }
 
@@ -436,7 +435,7 @@ public class MainActivity extends AppCompatActivity {
         private LinearLayout teaContainer;
         private String pendingTodayValue = null;
         private String pendingTotalValue = null;
-        private Handler timerHandler = new Handler(Looper.getMainLooper());
+        private final Handler timerHandler = new Handler(Looper.getMainLooper());
         private final Runnable timerRunnable = new Runnable() {
             @Override
             public void run() {
@@ -504,7 +503,7 @@ public class MainActivity extends AppCompatActivity {
                     TextView timeLeft = itemView.findViewById(R.id.teaTimerProgressText);
                     long remaining = tea.brewStopTime - now;
                     int max = 10000;
-                    int prog = (tea.soakSeconds > 0) ? (int) Math.max(0, Math.min(max, (remaining * max) / (tea.soakSeconds * 1000))) : 0;
+                    int prog = (tea.soakSeconds > 0) ? (int) Math.max(0, Math.min(max, (remaining * max) / (tea.soakSeconds * 1000L))) : 0;
                     if (progress != null) progress.setProgress(prog);
                     if (timeLeft != null) timeLeft.setText(Tea.brewText(remaining));
                 }

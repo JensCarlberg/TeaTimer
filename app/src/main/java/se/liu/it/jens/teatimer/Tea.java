@@ -4,6 +4,8 @@ import android.net.Uri;
 import android.view.View;
 import android.widget.EditText;
 
+import androidx.annotation.NonNull;
+
 import com.google.common.collect.ComparisonChain;
 
 import java.util.Date;
@@ -60,11 +62,11 @@ public class Tea implements Comparable<Tea> {
         }
 
         public Builder readView(View view) {
-            EditText teaText = (EditText) view.findViewById(R.id.form_teaName);
-            EditText typeText = (EditText) view.findViewById(R.id.form_teaType);
-            EditText potText = (EditText) view.findViewById(R.id.form_teaPot);
-            EditText volumeText = (EditText) view.findViewById(R.id.form_teaVolume);
-            EditText soakText = (EditText) view.findViewById(R.id.form_teaSoakTime);
+            EditText teaText = view.findViewById(R.id.form_teaName);
+            EditText typeText = view.findViewById(R.id.form_teaType);
+            EditText potText = view.findViewById(R.id.form_teaPot);
+            EditText volumeText = view.findViewById(R.id.form_teaVolume);
+            EditText soakText = view.findViewById(R.id.form_teaSoakTime);
 
             if (anyIsNull(teaText, typeText, potText, volumeText, soakText)) return this;
 
@@ -106,11 +108,11 @@ public class Tea implements Comparable<Tea> {
         }
 
         public void populateTeaFormView(View view) {
-            EditText teaText = (EditText) view.findViewById(R.id.form_teaName);
-            EditText typeText = (EditText) view.findViewById(R.id.form_teaType);
-            EditText potText = (EditText) view.findViewById(R.id.form_teaPot);
-            EditText volumeText = (EditText) view.findViewById(R.id.form_teaVolume);
-            EditText soakText = (EditText) view.findViewById(R.id.form_teaSoakTime);
+            EditText teaText = view.findViewById(R.id.form_teaName);
+            EditText typeText = view.findViewById(R.id.form_teaType);
+            EditText potText = view.findViewById(R.id.form_teaPot);
+            EditText volumeText = view.findViewById(R.id.form_teaVolume);
+            EditText soakText = view.findViewById(R.id.form_teaSoakTime);
 
             if (anyIsNull(teaText, typeText, potText, volumeText, soakText)) return;
 
@@ -200,6 +202,7 @@ public class Tea implements Comparable<Tea> {
 
     }
 
+    @NonNull
     @Override
     public String toString() {
         return String.format("%1$tF %1$tT\t%2$s\t%3$s\t%4$s\t%5$s\t%6$s", brewStartTime, tea, teaType, volumeLiter, pot, id);
