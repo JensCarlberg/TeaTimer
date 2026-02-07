@@ -3,6 +3,7 @@ package se.liu.it.jens.teatimer;
 import android.app.Activity;
 import android.net.Uri;
 import android.util.Log;
+import android.view.View;
 import android.widget.TextView;
 
 import org.json.JSONException;
@@ -75,7 +76,11 @@ public class NetworkService implements Runnable {
     }
 
     private static void setTextInView(int totalBrewedView, String totS, Activity activity) {
-        activity.runOnUiThread(() -> ((TextView) activity.findViewById(totalBrewedView)).setText(totS));
+        activity.runOnUiThread(() -> {
+            View view = activity.findViewById(totalBrewedView);
+            if (view == null) return;
+            ((TextView) view).setText(totS);
+        });
     }
 
     public static void getUsedTeaNames(TeaServerCallback callback, String teaServer) {

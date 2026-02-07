@@ -40,14 +40,17 @@ import com.google.android.material.tabs.TabLayoutMediator;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity {
 
+    private static final int MAX_LAST_SCANNED_TEAS = 10;
     public static final String TESERVER_ADDRESS_KEY = "teserverAddress";
     public static final String TESERVER_ADDRESS_DEFAULT = "https://www.konventste.se";
     public static String teaServer = TESERVER_ADDRESS_DEFAULT;
     private static final String LOG_TAG = MainActivity.class.getSimpleName();
     private static final long TIME_BETWEEN_SAME_TAG_READ = 5000;
+    ArrayList<Tea> lastScannedTeas = new ArrayList<>();
     private static final TeaList teaList = new TeaList();
     public static TeaList teaList() { return teaList; }
     private static SoundHandler soundHandler;
@@ -58,9 +61,10 @@ public class MainActivity extends AppCompatActivity {
     TabLayout tabLayout;
 
     enum Fragments {
-        TIMERS(0),
-        FORM(1),
-        /** @noinspection unused*/ SETTINGS(2);
+        /** @noinspection unused*/ SCANNED_TEAS_LIST(0),
+        TIMERS(1),
+        FORM(2),
+        /** @noinspection unused*/ SETTINGS(3);
 
         private final int id;
 
@@ -100,21 +104,24 @@ public class MainActivity extends AppCompatActivity {
         }
         getWindow().setStatusBarColor(android.graphics.Color.TRANSPARENT);
 
-        // Initialize ViewPager and Adapter
         mViewPager = findViewById(R.id.pager);
         mSectionsPagerAdapter = new SectionsPagerAdapter(this);
         mViewPager.setAdapter(mSectionsPagerAdapter);
+        mViewPager.setCurrentItem(1, false);
 
         tabLayout = findViewById(R.id.tab_layout);
         new TabLayoutMediator(tabLayout, mViewPager, (tab, position) -> {
             switch (position) {
                 case 0:
-                    tab.setText("Téer som drar");
+                    tab.setText("Senaste téer");
                     break;
                 case 1:
-                    tab.setText("Lägg till te");
+                    tab.setText("Téer som drar");
                     break;
                 case 2:
+                    tab.setText("Lägg till te");
+                    break;
+                case 3:
                     tab.setText("Konfig");
                     break;
             }
@@ -356,7 +363,23 @@ public class MainActivity extends AppCompatActivity {
         NetworkService.sendTea(tea, teaServer, activity);
     }
 
+    private final ArrayList<LastScannedTeasListener> lastScannedTeasListeners = new ArrayList<>();
+    public void addLastScannedTeasListener(LastScannedTeasListener listener) {
+        lastScannedTeasListeners.add(listener);
+    }
+    public void removeLastScannedTeasListener(LastScannedTeasListener listener) {
+        lastScannedTeasListeners.remove(listener);
+    }
+    private void notifyLastScannedTeasChanged() {
+        for (LastScannedTeasListener listener : lastScannedTeasListeners) {
+            listener.onLastScannedTeasChanged();
+        }
+    }
+
     private void logTea(Tea tea) {
+        lastScannedTeas.add(0, tea);
+        if (lastScannedTeas.size() > MAX_LAST_SCANNED_TEAS) lastScannedTeas.remove(MAX_LAST_SCANNED_TEAS);
+        notifyLastScannedTeasChanged();
         try {
             FileOutputStream outputStream = new FileOutputStream(getFile("Teas.log"), true);
             outputStream.write(tea.toString().getBytes(StandardCharsets.UTF_8));
@@ -423,19 +446,52 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public Fragment createFragment(int position) {
             return switch (position) {
-                case 0 -> new TeasFragment();
-                case 1 -> new EnterTeaFragment();
-                case 2 -> new ConfigurationFragment();
+                case 0 -> new ListLastScannedTeasFragment();
+                case 1 -> new TeasFragment();
+                case 2 -> new EnterTeaFragment();
+                case 3 -> new ConfigurationFragment();
                 default -> throw new IllegalArgumentException("Invalid position");
             };
         }
         @Override
         public int getItemCount() {
-            return 3;
+            return 4;
         }
     }
 
-    // --- Three Fragments ---
+    // --- Four Fragments ---
+    public static class ListLastScannedTeasFragment extends Fragment implements MainActivity.LastScannedTeasListener {
+        private LinearLayout scannedTeasList;
+        @Override
+        public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+            View root = inflater.inflate(R.layout.fragment_listlastteas, container, false);
+            scannedTeasList = root.findViewById(R.id.scanned_teas_list);
+            fillScannedTeasList();
+            ((MainActivity) requireActivity()).addLastScannedTeasListener(this);
+            return root;
+        }
+        @Override
+        public void onDestroyView() {
+            super.onDestroyView();
+            ((MainActivity) requireActivity()).removeLastScannedTeasListener(this);
+        }
+        @Override
+        public void onLastScannedTeasChanged() {
+            if (scannedTeasList != null && getActivity() != null) {
+                getActivity().runOnUiThread(this::fillScannedTeasList);
+            }
+        }
+        private void fillScannedTeasList() {
+            scannedTeasList.removeAllViews();
+            for (Tea tea : ((MainActivity) requireActivity()).lastScannedTeas) {
+                TextView teaView = new TextView(getContext());
+                teaView.setText(tea.teaAndPot());
+                teaView.setPadding(16, 8, 16, 8);
+                scannedTeasList.addView(teaView);
+            }
+        }
+    }
+
     public static class TeasFragment extends Fragment implements TeaList.TeaListListener {
         private TextView todayBrewedView;
         private TextView totalBrewedView;
@@ -589,5 +645,9 @@ public class MainActivity extends AppCompatActivity {
             // Replace with your actual layout for configuration
             return inflater.inflate(R.layout.fragment_settings, container, false);
         }
+    }
+
+    public static interface LastScannedTeasListener {
+        void onLastScannedTeasChanged();
     }
 }
