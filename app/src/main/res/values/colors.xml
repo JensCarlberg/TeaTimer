@@ -3,5 +3,9 @@
     <color name="colorPrimary">#3F51B5</color>
     <color name="colorPrimaryDark">#303F9F</color>
     <color name="colorAccent">#FF4081</color>
+    <color name="colorTabBackgroundSelected">#000000</color>
+    <color name="colorTabBackground">#03A9F4</color>
+    <color name="colorTabTextSelected">#FFFFFF</color>
+    <color name="colorTabText">#DDDDDD</color>
     <color name="colorTeaDone">#00FF00</color>
 </resources>

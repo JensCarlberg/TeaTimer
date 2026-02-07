@@ -31,10 +31,11 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
-import androidx.fragment.app.FragmentManager;
-import androidx.fragment.app.FragmentPagerAdapter;
-import androidx.viewpager.widget.PagerAdapter;
-import androidx.viewpager.widget.ViewPager;
+import androidx.viewpager2.adapter.FragmentStateAdapter;
+import androidx.viewpager2.widget.ViewPager2;
+
+import com.google.android.material.tabs.TabLayout;
+import com.google.android.material.tabs.TabLayoutMediator;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -54,6 +55,7 @@ public class MainActivity extends AppCompatActivity {
     public static long lastTime = System.currentTimeMillis() - TIME_BETWEEN_SAME_TAG_READ;
 
     private NfcAdapter nfcAdapter = null;
+    TabLayout tabLayout;
 
     enum Fragments {
         TIMERS(0),
@@ -81,9 +83,8 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    PagerAdapter mSectionsPagerAdapter;
-
-    ViewPager mViewPager;
+    ViewPager2 mViewPager;
+    FragmentStateAdapter mSectionsPagerAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -101,8 +102,23 @@ public class MainActivity extends AppCompatActivity {
 
         // Initialize ViewPager and Adapter
         mViewPager = findViewById(R.id.pager);
-        mSectionsPagerAdapter = new SectionsPagerAdapter(getSupportFragmentManager());
+        mSectionsPagerAdapter = new SectionsPagerAdapter(this);
         mViewPager.setAdapter(mSectionsPagerAdapter);
+
+        tabLayout = findViewById(R.id.tab_layout);
+        new TabLayoutMediator(tabLayout, mViewPager, (tab, position) -> {
+            switch (position) {
+                case 0:
+                    tab.setText("Téer som drar");
+                    break;
+                case 1:
+                    tab.setText("Lägg till te");
+                    break;
+                case 2:
+                    tab.setText("Konfig");
+                    break;
+            }
+        }).attach();
 
         nfcAdapter = NfcAdapter.getDefaultAdapter(this);
         if (nfcAdapter == null) {
@@ -299,7 +315,7 @@ public class MainActivity extends AppCompatActivity {
     private void gotoTeaForm() { gotoFragment(Fragments.FORM.id); }
 
     private void gotoFragment(int id) {
-        mViewPager.setCurrentItem(id);
+        mViewPager.setCurrentItem(id, true);
     }
 
     public void clearForm(View view) {
@@ -398,39 +414,24 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-    /**
-     * A {@link FragmentPagerAdapter} that returns a fragment corresponding to
-     * one of the sections/tabs/pages.
-     */
-    public static class SectionsPagerAdapter extends FragmentPagerAdapter {
-
-        public SectionsPagerAdapter(FragmentManager fm) {
-            super(fm);
+    public static class SectionsPagerAdapter extends FragmentStateAdapter {
+        public SectionsPagerAdapter(AppCompatActivity fa) {
+            super(fa);
         }
 
+        @NonNull
         @Override
-        public Fragment getItem(int position) {
+        public Fragment createFragment(int position) {
             return switch (position) {
                 case 0 -> new TeasFragment();
                 case 1 -> new EnterTeaFragment();
                 case 2 -> new ConfigurationFragment();
-                default -> null;
+                default -> throw new IllegalArgumentException("Invalid position");
             };
         }
-
         @Override
-        public int getCount() {
+        public int getItemCount() {
             return 3;
-        }
-
-        @Override
-        public CharSequence getPageTitle(int position) {
-            return switch (position) {
-                case 0 -> "Téer som drar";
-                case 1 -> "Lägg till te";
-                case 2 -> "Inställningar";
-                default -> null;
-            };
         }
     }
 
@@ -551,23 +552,6 @@ public class MainActivity extends AppCompatActivity {
             if (timeLeft != null) timeLeft.setText(Tea.brewText(remaining));
         }
 
-        public void refreshTeaList() {
-            rebuildTeaListViews();
-        }
-        public void setTodayBrewed(String value) {
-            if (todayBrewedView != null) {
-                todayBrewedView.setText(value);
-            } else {
-                pendingTodayValue = value;
-            }
-        }
-        public void setTotalBrewed(String value) {
-            if (totalBrewedView != null) {
-                totalBrewedView.setText(value);
-            } else {
-                pendingTotalValue = value;
-            }
-        }
         @Override
         public void onResume() {
             super.onResume();
