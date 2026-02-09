@@ -220,4 +220,9 @@ public class Tea implements Comparable<Tea> {
                 .build();
     }
 
+    public String getBrewStartTimeFormatted() {
+        java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.getDefault());
+        return sdf.format(brewStartTime);
+    }
+
 }

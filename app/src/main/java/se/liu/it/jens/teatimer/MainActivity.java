@@ -52,6 +52,8 @@ public class MainActivity extends AppCompatActivity {
     private static final long TIME_BETWEEN_SAME_TAG_READ = 5000;
     ArrayList<Tea> lastScannedTeas = new ArrayList<>();
     private static final TeaList teaList = new TeaList();
+    private PendingIntent pendingIntent;
+
     public static TeaList teaList() { return teaList; }
     private static SoundHandler soundHandler;
     public static String lastId = "";
@@ -132,6 +134,10 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(this, "NFC saknas,kan inte läsa taggar", Toast.LENGTH_LONG).show();
         }
 
+        pendingIntent = PendingIntent.getActivity(
+                this, 0, new Intent(this, getClass()).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP), PendingIntent.FLAG_MUTABLE
+        );
+
         if (savedInstanceState == null)
             return;
         teaServer = savedInstanceState.getString(TESERVER_ADDRESS_KEY, TESERVER_ADDRESS_DEFAULT);
@@ -174,7 +180,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        setupForegroundDispatch(this, nfcAdapter);
+        setupForegroundDispatch(this, nfcAdapter, pendingIntent);
     }
 
     @Override
@@ -194,12 +200,8 @@ public class MainActivity extends AppCompatActivity {
         teaServer = savedInstanceState.getString(TESERVER_ADDRESS_KEY, TESERVER_ADDRESS_DEFAULT);
     }
 
-    public static void setupForegroundDispatch(final Activity activity, NfcAdapter adapter) {
+    public static void setupForegroundDispatch(final Activity activity, NfcAdapter adapter, PendingIntent pendingIntent) {
         if (adapter == null) return;
-        final Intent intent = new Intent(activity.getApplicationContext(), activity.getClass());
-        intent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
-
-        final PendingIntent pendingIntent = PendingIntent.getActivity(activity.getApplicationContext(), 0, intent, PendingIntent.FLAG_IMMUTABLE);
 
         IntentFilter[] filters = new IntentFilter[1];
         String[][] techList = new String[][]{};
@@ -214,7 +216,8 @@ public class MainActivity extends AppCompatActivity {
             throw new RuntimeException("Check your mime type.");
         }
 
-        adapter.enableForegroundDispatch(activity, pendingIntent, filters, techList);
+        //adapter.enableForegroundDispatch(activity, pendingIntent, filters, techList);
+        adapter.enableForegroundDispatch(activity, pendingIntent, null, null);
     }
 
     /**
@@ -253,7 +256,7 @@ public class MainActivity extends AppCompatActivity {
         NdefMessage msg = (NdefMessage) rawMsgs[0];
         String text = new String(msg.getRecords()[0].getPayload());
         final View teaForm = this.findViewById(R.id.form_layout);
-        final View teaStartButton = teaForm.findViewById(R.id.form_teaStart);
+        final View teaStartButton = teaForm == null ? null : teaForm.findViewById(R.id.form_teaStart);
         final Tea.Builder builder = new Tea.Builder().readView(teaForm).readTag(text);
         this.runOnUiThread(() -> {
             builder.populateTeaFormView(teaForm);
@@ -484,10 +487,16 @@ public class MainActivity extends AppCompatActivity {
         private void fillScannedTeasList() {
             scannedTeasList.removeAllViews();
             for (Tea tea : ((MainActivity) requireActivity()).lastScannedTeas) {
-                TextView teaView = new TextView(getContext());
-                teaView.setText(tea.teaAndPot());
-                teaView.setPadding(16, 8, 16, 8);
-                scannedTeasList.addView(teaView);
+                View itemView = LayoutInflater.from(getContext()).inflate(R.layout.scanned_tea_and_time, scannedTeasList, false);
+                TextView timeView = itemView.findViewById(R.id.scanned_time);
+                TextView nameView = itemView.findViewById(R.id.scanned_tea_name);
+                if (timeView != null) {
+                    timeView.setText(tea.getBrewStartTimeFormatted());
+                }
+                if (nameView != null) {
+                    nameView.setText(tea.tea);
+                }
+                scannedTeasList.addView(itemView);
             }
         }
     }
