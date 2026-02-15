@@ -462,8 +462,17 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    ListLastScannedTeasFragment listLastScannedTeas;
+    TeasFragment teas;
+    EnterTeaFragment enterTeas;
+    ConfigurationFragment configuration;
+
     // --- Four Fragments ---
     public static class ListLastScannedTeasFragment extends Fragment implements MainActivity.LastScannedTeasListener {
+        ListLastScannedTeasFragment() {
+            super();
+            ((MainActivity) requireActivity()).listLastScannedTeas = this;
+        }
         private LinearLayout scannedTeasList;
         @Override
         public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -502,6 +511,10 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public static class TeasFragment extends Fragment implements TeaList.TeaListListener {
+        TeasFragment() {
+            super();
+            ((MainActivity) requireActivity()).teas = this;
+        }
         private TextView todayBrewedView;
         private TextView totalBrewedView;
         private LinearLayout teaContainer;
@@ -641,14 +654,52 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public static class EnterTeaFragment extends Fragment {
+        EnterTeaFragment() {
+            super();
+            ((MainActivity) requireActivity()).enterTeas = this;
+        }
+        View view;
+        Tea tea;
+        void setTea(Tea tea) { this.tea = tea; }
+        Tea getTea() { return this.tea; }
+        void clearTea() { this.tea = null; }
         @Override
         public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-            // Replace with your actual layout for entering tea to brew
-            return inflater.inflate(R.layout.fragment_form, container, false);
+            view = inflater.inflate(R.layout.fragment_form, container, false);
+            return view;
+        }
+        public void populateTeaFormView(Tea tea) {
+            EditText teaText = view.findViewById(R.id.form_teaName);
+            EditText typeText = view.findViewById(R.id.form_teaType);
+            EditText potText = view.findViewById(R.id.form_teaPot);
+            EditText volumeText = view.findViewById(R.id.form_teaVolume);
+            EditText soakText = view.findViewById(R.id.form_teaSoakTime);
+
+            if (anyIsNull(teaText, typeText, potText, volumeText, soakText)) return;
+
+            if (tea.tea != null) teaText.setText(tea.tea);
+            if (tea.teaType != null) typeText.setText(tea.teaType);
+            if (tea.pot != null) potText.setText(tea.pot);
+            if (tea.volumeLiter > 0) volumeText.setText(""+tea.volumeLiter);
+            if (tea.soakSeconds > 0) soakText.setText(""+tea.soakSeconds);
+        }
+        public boolean allSet(Tea tea) {
+            return !anyIsNull(tea.tea, tea.teaType, tea.pot)
+                    && tea.volumeLiter > 0
+                    && tea.soakSeconds > 0;
+        }
+        private boolean anyIsNull(Object... objects) {
+            for (Object o: objects)
+                if (o == null) return true;
+            return false;
         }
     }
 
     public static class ConfigurationFragment extends Fragment {
+        ConfigurationFragment() {
+            super();
+            ((MainActivity) requireActivity()).configuration = this;
+        }
         @Override
         public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
             // Replace with your actual layout for configuration
