@@ -63,10 +63,9 @@ public class MainActivity extends AppCompatActivity {
     TabLayout tabLayout;
 
     enum Fragments {
-        /** @noinspection unused*/ SCANNED_TEAS_LIST(0),
-        TIMERS(1),
-        FORM(2),
-        /** @noinspection unused*/ SETTINGS(3);
+        TIMERS(0),
+        FORM(1),
+        /** @noinspection unused*/ SETTINGS(2);
 
         private final int id;
 
@@ -109,21 +108,17 @@ public class MainActivity extends AppCompatActivity {
         mViewPager = findViewById(R.id.pager);
         mSectionsPagerAdapter = new SectionsPagerAdapter(this);
         mViewPager.setAdapter(mSectionsPagerAdapter);
-        mViewPager.setCurrentItem(1, false);
 
         tabLayout = findViewById(R.id.tab_layout);
         new TabLayoutMediator(tabLayout, mViewPager, (tab, position) -> {
             switch (position) {
                 case 0:
-                    tab.setText("Senaste téer");
-                    break;
-                case 1:
                     tab.setText("Téer som drar");
                     break;
-                case 2:
+                case 1:
                     tab.setText("Lägg till te");
                     break;
-                case 3:
+                case 2:
                     tab.setText("Konfig");
                     break;
             }
@@ -255,15 +250,26 @@ public class MainActivity extends AppCompatActivity {
         Parcelable[] rawMsgs = intent.getParcelableArrayExtra(NfcAdapter.EXTRA_NDEF_MESSAGES);
         NdefMessage msg = (NdefMessage) rawMsgs[0];
         String text = new String(msg.getRecords()[0].getPayload());
-        final View teaForm = this.findViewById(R.id.form_layout);
-        final View teaStartButton = teaForm == null ? null : teaForm.findViewById(R.id.form_teaStart);
-        final Tea.Builder builder = new Tea.Builder().readView(teaForm).readTag(text);
+
+        // form_layout lives inside EnterTeaFragment (tab 1). Navigate there first so the
+        // fragment view is guaranteed to exist, then process the tag on the next layout pass.
         this.runOnUiThread(() -> {
-            builder.populateTeaFormView(teaForm);
-            if (builder.allSet()) {
-                addTeaTimer(teaStartButton);
-            } else
-                gotoTeaForm();
+            gotoTeaForm();
+            mViewPager.post(() -> {
+                final View teaForm = this.findViewById(R.id.form_layout);
+                if (teaForm == null) {
+                    Log.e(LOG_TAG, "processIntent: form_layout not found after navigating to form tab");
+                    return;
+                }
+                final View teaStartButton = teaForm.findViewById(R.id.form_teaStart);
+                final Tea.Builder builder = new Tea.Builder().readView(teaForm).readTag(text);
+                builder.populateTeaFormView(teaForm);
+                if (builder.allSet()) {
+                    addTeaTimer(teaStartButton);
+                } else {
+                    gotoTeaForm();
+                }
+            });
         });
     }
 
@@ -449,72 +455,20 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public Fragment createFragment(int position) {
             return switch (position) {
-                case 0 -> new ListLastScannedTeasFragment();
-                case 1 -> new TeasFragment();
-                case 2 -> new EnterTeaFragment();
-                case 3 -> new ConfigurationFragment();
+                case 0 -> new TeasFragment();
+                case 1 -> new EnterTeaFragment();
+                case 2 -> new ConfigurationFragment();
                 default -> throw new IllegalArgumentException("Invalid position");
             };
         }
         @Override
         public int getItemCount() {
-            return 4;
+            return 3;
         }
     }
 
-    ListLastScannedTeasFragment listLastScannedTeas;
-    TeasFragment teas;
-    EnterTeaFragment enterTeas;
-    ConfigurationFragment configuration;
-
-    // --- Four Fragments ---
-    public static class ListLastScannedTeasFragment extends Fragment implements MainActivity.LastScannedTeasListener {
-        ListLastScannedTeasFragment() {
-            super();
-            ((MainActivity) requireActivity()).listLastScannedTeas = this;
-        }
-        private LinearLayout scannedTeasList;
-        @Override
-        public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-            View root = inflater.inflate(R.layout.fragment_listlastteas, container, false);
-            scannedTeasList = root.findViewById(R.id.scanned_teas_list);
-            fillScannedTeasList();
-            ((MainActivity) requireActivity()).addLastScannedTeasListener(this);
-            return root;
-        }
-        @Override
-        public void onDestroyView() {
-            super.onDestroyView();
-            ((MainActivity) requireActivity()).removeLastScannedTeasListener(this);
-        }
-        @Override
-        public void onLastScannedTeasChanged() {
-            if (scannedTeasList != null && getActivity() != null) {
-                getActivity().runOnUiThread(this::fillScannedTeasList);
-            }
-        }
-        private void fillScannedTeasList() {
-            scannedTeasList.removeAllViews();
-            for (Tea tea : ((MainActivity) requireActivity()).lastScannedTeas) {
-                View itemView = LayoutInflater.from(getContext()).inflate(R.layout.scanned_tea_and_time, scannedTeasList, false);
-                TextView timeView = itemView.findViewById(R.id.scanned_time);
-                TextView nameView = itemView.findViewById(R.id.scanned_tea_name);
-                if (timeView != null) {
-                    timeView.setText(tea.getBrewStartTimeFormatted());
-                }
-                if (nameView != null) {
-                    nameView.setText(tea.tea);
-                }
-                scannedTeasList.addView(itemView);
-            }
-        }
-    }
-
+    // --- Three Fragments ---
     public static class TeasFragment extends Fragment implements TeaList.TeaListListener {
-        TeasFragment() {
-            super();
-            ((MainActivity) requireActivity()).teas = this;
-        }
         private TextView todayBrewedView;
         private TextView totalBrewedView;
         private LinearLayout teaContainer;
@@ -654,52 +608,14 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public static class EnterTeaFragment extends Fragment {
-        EnterTeaFragment() {
-            super();
-            ((MainActivity) requireActivity()).enterTeas = this;
-        }
-        View view;
-        Tea tea;
-        void setTea(Tea tea) { this.tea = tea; }
-        Tea getTea() { return this.tea; }
-        void clearTea() { this.tea = null; }
         @Override
         public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-            view = inflater.inflate(R.layout.fragment_form, container, false);
-            return view;
-        }
-        public void populateTeaFormView(Tea tea) {
-            EditText teaText = view.findViewById(R.id.form_teaName);
-            EditText typeText = view.findViewById(R.id.form_teaType);
-            EditText potText = view.findViewById(R.id.form_teaPot);
-            EditText volumeText = view.findViewById(R.id.form_teaVolume);
-            EditText soakText = view.findViewById(R.id.form_teaSoakTime);
-
-            if (anyIsNull(teaText, typeText, potText, volumeText, soakText)) return;
-
-            if (tea.tea != null) teaText.setText(tea.tea);
-            if (tea.teaType != null) typeText.setText(tea.teaType);
-            if (tea.pot != null) potText.setText(tea.pot);
-            if (tea.volumeLiter > 0) volumeText.setText(""+tea.volumeLiter);
-            if (tea.soakSeconds > 0) soakText.setText(""+tea.soakSeconds);
-        }
-        public boolean allSet(Tea tea) {
-            return !anyIsNull(tea.tea, tea.teaType, tea.pot)
-                    && tea.volumeLiter > 0
-                    && tea.soakSeconds > 0;
-        }
-        private boolean anyIsNull(Object... objects) {
-            for (Object o: objects)
-                if (o == null) return true;
-            return false;
+            // Replace with your actual layout for entering tea to brew
+            return inflater.inflate(R.layout.fragment_form, container, false);
         }
     }
 
     public static class ConfigurationFragment extends Fragment {
-        ConfigurationFragment() {
-            super();
-            ((MainActivity) requireActivity()).configuration = this;
-        }
         @Override
         public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
             // Replace with your actual layout for configuration
