@@ -24,11 +24,13 @@ import android.view.ViewGroup;
 import android.view.WindowInsetsController;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
+import android.widget.GridLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 import androidx.viewpager2.adapter.FragmentStateAdapter;
@@ -469,6 +471,8 @@ public class MainActivity extends AppCompatActivity {
 
     // --- Three Fragments ---
     public static class TeasFragment extends Fragment implements TeaList.TeaListListener {
+
+        GridLayout brewedStats = null;
         private TextView todayBrewedView;
         private TextView totalBrewedView;
         private LinearLayout teaContainer;
@@ -499,10 +503,13 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
             View v = inflater.inflate(R.layout.fragment_teas, container, false);
+            brewedStats = v.findViewById(R.id.brewed_stats);
             todayBrewedView = v.findViewById(R.id.todayBrewed);
             totalBrewedView = v.findViewById(R.id.totalBrewed);
             teaContainer = v.findViewById(R.id.teaContainer);
             MainActivity.teaList().setListener(this);
+            if (brewedStats != null)
+                brewedStats.setOnClickListener(v2 -> showStatsAndLatestBrews(v2));
             if (pendingTodayValue != null) {
                 todayBrewedView.setText(pendingTodayValue);
                 pendingTodayValue = null;
@@ -559,6 +566,14 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
+        private void showStatsAndLatestBrews(View v) {
+            new AlertDialog.Builder(v.getContext())
+                    .setTitle("Senast bryggda téer")
+                    .setMessage(String.join("\n", teaList().lastBrewed))
+                    .setPositiveButton("OK", null)
+                    .show();
+        }
+
         private void updateOtherTeaProgress(Tea tea, View itemView, long now) {
             TextView timeLeft = itemView.findViewById(R.id.teaTimerDismiss);
             long remaining = tea.brewStopTime - now;
@@ -610,16 +625,28 @@ public class MainActivity extends AppCompatActivity {
     public static class EnterTeaFragment extends Fragment {
         @Override
         public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-            // Replace with your actual layout for entering tea to brew
             return inflater.inflate(R.layout.fragment_form, container, false);
         }
     }
 
     public static class ConfigurationFragment extends Fragment {
+
+        EditText editText;
+
         @Override
         public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-            // Replace with your actual layout for configuration
-            return inflater.inflate(R.layout.fragment_settings, container, false);
+            View view = inflater.inflate(R.layout.fragment_settings, container, false);
+            EditText editText = view.findViewById(R.id.setting_teaServer);
+            return view;
+        }
+
+        @Override
+        public void onViewStateRestored(Bundle savedInstanceState) {
+            super.onViewStateRestored(savedInstanceState);
+            if (savedInstanceState == null)
+                return;
+            teaServer = savedInstanceState.getString(TESERVER_ADDRESS_KEY, TESERVER_ADDRESS_DEFAULT);
+            editText.setText(teaServer);
         }
     }
 

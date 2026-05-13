@@ -10,6 +10,7 @@
     tools:context=".MainActivity$TeasFragment">
 
     <GridLayout
+        android:id="@+id/brewed_stats"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:columnCount="2"
@@ -57,35 +58,16 @@
             android:layout_column="1" />
     </GridLayout>
 
-    <!-- A vertical LinearLayout in a ScrollView. This emulates a ListView (and is lighter weight
-         than a ListView when there aren't many rows). -->
     <ScrollView android:layout_width="match_parent"
-        android:layout_height="match_parent">
-
-        <!-- Note that this LinearLayout has the "animateLayoutChanges" property set to true.
-             This tells the framework to automatically animate child views (in this case, rows)
-             as they are added to and removed from the LinearLayout. -->
+        android:layout_height="wrap_content"
+        >
         <LinearLayout android:id="@+id/teaContainer"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:showDividers="middle"
-            android:divider="?android:dividerHorizontal"
             android:animateLayoutChanges="true"
             android:paddingLeft="16dp"
             android:paddingRight="16dp" />
 
     </ScrollView>
-
-    <!-- <ListView
-        android:id="@+id/list_teatimers"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="#aaffffff"
-        android:dividerHeight="0.1dp"
-        android:divider="#0000CC"
-        android:layout_weight="1">
-
-    </ListView> -->
-
 </LinearLayout>

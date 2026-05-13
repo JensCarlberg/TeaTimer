@@ -5,7 +5,19 @@ import android.view.ViewGroup;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.SortedList;
 
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.Locale;
+import java.util.Map;
+import java.util.TreeMap;
+
+import javax.xml.parsers.SAXParser;
+
 public class TeaList extends SortedList<Tea> implements Iterable<Tea> {
+
+    public static final SimpleDateFormat SHORT_TIME = new SimpleDateFormat("HH:mm: ", Locale.getDefault());
+
     public interface TeaListListener {
         void onTeaListChanged();
     }
@@ -15,6 +27,8 @@ public class TeaList extends SortedList<Tea> implements Iterable<Tea> {
     }
 
     ViewGroup teaContainer = null;
+    ArrayList<String> lastBrewed = new ArrayList<>(11);
+
 
     public TeaList() {
         super(Tea.class, new Callback<>() {
@@ -53,9 +67,15 @@ public class TeaList extends SortedList<Tea> implements Iterable<Tea> {
 
     @Override
     public int add(Tea tea) {
+        lastBrewed.add(0, String.format("%s\t%s", formatTime(tea.brewStartTime), tea.tea));
+        if (lastBrewed.size() > 10) lastBrewed.remove(10);
         int pos = super.add(tea);
         if (listener != null) listener.onTeaListChanged();
         return pos;
+    }
+
+    private String formatTime(Date brewStartTime) {
+        return SHORT_TIME.format(brewStartTime);
     }
 
     @Override
